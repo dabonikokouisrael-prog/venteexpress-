@@ -1,0 +1,70 @@
+V2.5 — SI LE CATALOGUE AFFICHE « Erreur de publication »
+1. Dans l'app, onglet Catalogue public, appuie sur « Tester le serveur ».
+2. Si tu vois « introuvable (erreur 404) » : le dossier netlify/functions n'a pas été envoyé sur GitHub.
+   Vérifie sur GitHub que les fichiers netlify/functions/catalogue.mjs et netlify/functions/analyze.mjs existent.
+   (Sur téléphone, l'envoi de dossiers ne marche pas : utilise Add file > Create new file, tape le nom
+   netlify/functions/catalogue.mjs et colle le code. Les "/" créent les dossiers.)
+   Dans Netlify > Functions, tu dois voir « catalogue » et « analyze ».
+3. Si « Stockage Netlify indisponible » : redéploie (Deploys > Trigger deploy > Clear cache and deploy).
+4. Si « Clé ANTHROPIC_API_KEY absente » : ajoute la variable dans Netlify puis redéploie.
+Le dossier supabase/ contient un schéma prévu pour la suite (vidéos, vrais comptes) : il n'est pas encore utilisé par l'app.
+
+VENTEEXPRESS - MODE D'EMPLOI
+
+CONTENU : index.html (tout le site tient dans ce seul fichier)
+
+DEPLOYER (obligatoire : Netlify relié à GitHub)
+Le glisser-déposer (app.netlify.com/drop) NE SUFFIT PLUS : le catalogue public et l'IA ont besoin
+du dossier netlify/ et de package.json.
+1. Mets TOUT le contenu du zip (index.html, netlify.toml, package.json, dossier netlify/) à la racine d'un dépôt GitHub.
+2. Sur Netlify : Add new site > Import from Git > choisis le dépôt. Aucune commande de build à saisir.
+3. Ajoute la variable ANTHROPIC_API_KEY (voir ANALYSE IA plus bas), puis redéploie.
+4. Ouvre ton-site/catalogue/ton-lien pour vérifier. (Sans serveur, l'app marche mais sans catalogue ni IA.)
+
+AVANT DE PUBLIER : ouvre index.html dans un éditeur de texte, cherche "CONFIGURATION"
+et vérifie : ownerWhatsApp, payNumber, secret, trialDays, priceLabel.
+
+GENERER UN CODE D'ACTIVATION (après un paiement)
+1. Ouvre ton site, F12 > onglet Console.
+2. Tape : genererCode("identifiant-du-vendeur", 30)
+   (l'identifiant doit être EXACTEMENT celui de l'inscription)
+3. Envoie le code au vendeur sur WhatsApp.
+
+FONCTIONS : annonce (Promo / Classique / Court / Instagram), partage WhatsApp,
+Instagram et Facebook, catalogue avec photos, liste de prix, stock, ventes et bénéfice,
+réponses rapides, groupes WhatsApp, essai gratuit + abonnement.
+
+LIMITES A CONNAITRE
+- Les données sont enregistrées dans le navigateur du vendeur (pas de synchronisation
+  entre téléphone et ordinateur). Conseille-lui de garder le même appareil.
+- Le code secret est lisible dans le fichier : suffisant pour démarrer, pas contre un
+  utilisateur technique. Pour un vrai paiement automatique, il faudra un serveur.
+
+NOUVEAUTES V2.1
+- Interface modernisée (cartes, boutons, animations légères, mobile et ordinateur).
+- Photo OU vidéo du produit (une image de couverture est extraite de la vidéo).
+- Description modifiable ; bouton « Générer » (modèle simple sans IA tant que CONFIG.aiEndpoint est vide).
+- Annonce adaptée à WhatsApp, Facebook, Instagram + bouton Copier.
+- Stock : boutons − / +, « Stock faible » (seuil CONFIG.lowStock), « Rupture ».
+- Bénéfice calculé en direct (privé, jamais dans les annonces ni la liste de prix).
+- Réponse rapide « Comment commander ? » ajoutée.
+
+CATALOGUE PUBLIC (V2.2)
+- Onglet « Catalogue public » : le vendeur choisit un nom de lien, obtient /catalogue/nom-du-vendeur.
+- Le client voit : produits, photos, descriptions, prix, Disponible/Épuisé, bouton Commander (WhatsApp).
+- Jamais publié : prix d'achat, bénéfice, quantités (le serveur ne garde que les champs autorisés).
+- Mise à jour automatique quand le vendeur modifie un produit ou un prix.
+- DEPLOIEMENT : Netlify relié à GitHub (ou « netlify deploy --prod » après « npm install »).
+  Le simple glisser-déposer ne suffit pas : il faut les fonctions (dossier netlify/) et package.json.
+- Max 60 produits publiés ; les photos sont réduites automatiquement avant l'envoi (une photo trop lourde est ignorée, un message l'indique) ; les vidéos ne sont pas dans le catalogue (image de couverture seulement).
+
+ANALYSE IA (V2.3)
+- Bouton « ✨ Générer » : l'IA regarde la photo (ou l'image de la vidéo) et propose nom + points forts, modifiables.
+- Dans Netlify > Site settings > Environment variables, ajoute ANTHROPIC_API_KEY (ta clé Anthropic).
+  Facultatif : ANTHROPIC_MODEL (défaut claude-haiku-5-5), AI_DAILY_LIMIT (défaut 30 analyses par visiteur et par jour),
+  AI_GLOBAL_DAILY_LIMIT (défaut 300 analyses par jour au total), CATALOGUE_NEW_PER_DAY (défaut 5 nouveaux catalogues par visiteur et par jour).
+- Mets aussi une limite de dépense sur ta clé dans la console Anthropic.
+- Sans clé ou sans serveur, le bouton garde le modèle de description simple.
+
+PAS ENCORE FAIT
+- Parcours guidé en étapes (Photo > Description > Prix > Stock > Annonce > Partager).

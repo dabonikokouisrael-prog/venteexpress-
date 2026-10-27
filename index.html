@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#4f46e5">
+<title>VenteExpress</title>
+<style>:root{--blue:#4f46e5;--navy:#111827;--green:#059669;--red:#dc2626;--bg:#f5f6fb;--line:#e5e7eb}
+*{box-sizing:border-box}
+body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:#1f2937;-webkit-font-smoothing:antialiased}
+.hidden{display:none!important}
+header{background:#fff;border-bottom:1px solid var(--line);padding:12px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:5}
+header h1{margin:0;font-size:20px;color:var(--navy);letter-spacing:-.3px}
+header h1 span,.logo span{color:var(--blue)}
+header p{margin:2px 0 0;color:#6b7280;font-size:13px}
+.wrap{max-width:1000px;margin:0 auto;padding:16px}
+nav{display:flex;gap:6px;overflow-x:auto;margin-bottom:16px;padding-bottom:4px}
+nav button{background:#fff;color:#374151;border:1px solid var(--line);white-space:nowrap;border-radius:999px}
+nav button.active{background:var(--blue);color:#fff;border-color:var(--blue);box-shadow:0 4px 12px rgba(79,70,229,.3)}
+.card{background:#fff;padding:20px;border-radius:16px;border:1px solid var(--line);box-shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(17,24,39,.05);margin-bottom:16px;animation:in .25s ease}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card h2{margin:0 0 6px;font-size:18px;color:var(--navy)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.wrap{padding:12px}}
+label{display:block;font-weight:600;margin:14px 0 6px;font-size:13px;color:#374151}
+input,textarea,select{width:100%;padding:11px 12px;border:1px solid #d1d5db;border-radius:10px;font-size:15px;font-family:inherit;background:#fff;transition:border .15s,box-shadow .15s}
+input:focus,textarea:focus,select:focus{outline:0;border-color:var(--blue);box-shadow:0 0 0 3px rgba(79,70,229,.15)}
+button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+textarea{min-height:100px;resize:vertical}
+button{border:0;border-radius:10px;padding:10px 15px;font-weight:600;cursor:pointer;font-size:14px;background:#eef0f6;color:#374151;transition:transform .1s,filter .15s}
+button:hover{filter:brightness(.96)}button:active{transform:scale(.97)}
+button.p{background:var(--blue);color:#fff}
+button.g{background:#16a34a;color:#fff}
+button.d{background:#fee2e2;color:var(--red)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.preview{white-space:pre-wrap;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:14px;padding:14px;min-height:160px;line-height:1.55;word-break:break-word}
+.preview img,.preview video{display:block;width:100%;max-height:240px;object-fit:cover;border-radius:10px;margin-bottom:8px}
+.item{border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:10px;background:#fcfcff}
+.item b{display:block;margin-bottom:4px}
+.item pre{white-space:pre-wrap;font-family:inherit;margin:4px 0 8px;font-size:14px}
+.badge{background:#eef2ff;color:var(--blue);padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;display:inline-block}
+.badge.ok{background:#d1fae5;color:var(--green)}
+.badge.warn{background:#fee2e2;color:var(--red)}
+.msg{font-size:13px;margin-top:8px;min-height:18px}
+.muted{color:#6b7280;font-size:13px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}
+.stat{background:#f3f4ff;border-radius:12px;padding:12px;font-size:14px}.stat small{display:block;color:#6b7280;margin-bottom:2px}.stat b{font-size:17px}
+.qty{width:76px!important;padding:9px!important;text-align:center}
+.pg{color:var(--green)}.pr{color:var(--red)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}.pc{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(17,24,39,.05)}.pc img{width:100%;height:200px;object-fit:cover;display:block}.pc div{padding:14px}.pc h3{margin:0 0 4px;font-size:16px}.pc .pp{font-size:18px;font-weight:800;color:var(--blue);margin:6px 0}</style>
+</head>
+<body>
+
+<!-- CONNEXION -->
+<div id="auth" class="wrap" style="max-width:420px;margin-top:30px">
+  <div class="card">
+    <h1 class="logo" style="margin:0">Vente<span>Express</span></h1>
+    <p class="muted">Crée des annonces qui vendent !</p>
+    <div class="row">
+      <button id="tabLogin" class="p" onclick="showAuth('login')">Connexion</button>
+      <button id="tabSignup" onclick="showAuth('signup')">Inscription</button>
+    </div>
+    <div id="signupFields" class="hidden">
+      <label>Nom de ta boutique</label>
+      <input id="shopName" placeholder="Ex. Boutique Ama">
+    </div>
+    <label>Numéro ou e-mail</label>
+    <input id="authId" placeholder="Ex. 90123456 ou nom@mail.com">
+    <label>Mot de passe</label>
+    <input id="authPass" type="password" placeholder="4 caractères minimum">
+    <button id="authBtn" class="p" style="width:100%;margin-top:14px" onclick="submitAuth()">Se connecter</button>
+    <div id="authMsg" class="msg" style="color:var(--red)"></div>
+    <p class="muted">7 jours d'essai gratuit à l'inscription.</p>
+  </div>
+</div>
+
+<div id="pubView" class="wrap hidden"></div>
+
+<!-- APPLICATION -->
+<div id="main" class="hidden">
+  <header>
+    <div><h1>Vente<span>Express</span></h1><p id="userLabel"></p></div>
+    <div><span id="subBadge" class="badge"></span> <button onclick="logout()">Déconnexion</button></div>
+  </header>
+  <div class="wrap">
+    <nav>
+      <button data-tab="gen" onclick="showTab('gen')">✨ Annonce</button>
+      <button data-tab="cat" onclick="showTab('cat')">📦 Catalogue</button>
+      <button data-tab="pub" onclick="showTab('pub')">🔗 Catalogue public</button>
+      <button data-tab="prix" onclick="showTab('prix')">🏷️ Prix</button>
+      <button data-tab="stk" onclick="showTab('stk')">📊 Stock</button>
+      <button data-tab="rep" onclick="showTab('rep')">💬 Réponses</button>
+      <button data-tab="grp" onclick="showTab('grp')">👥 Groupes</button>
+      <button data-tab="abo" onclick="showTab('abo')">⭐ Abonnement</button>
+    </nav>
+
+    <div id="lockBox" class="card hidden" style="border:2px solid var(--red)">
+      <b>Ton essai est terminé.</b> Ouvre l'onglet Abonnement pour continuer.
+    </div>
+
+    <!-- ANNONCE -->
+    <div id="tab-gen" class="tabpane">
+      <div class="grid">
+        <div class="card">
+          <h2>Créer une annonce</h2>
+          <label>Nom du produit</label>
+          <input id="pName" placeholder="Ex. Montre connectée">
+          <label>Prix</label>
+          <div class="row" style="margin:0">
+            <input id="pPrice" type="number" placeholder="15000" style="flex:2" oninput="liveProfit()">
+            <select id="pCur" style="flex:1"><option>FCFA</option><option>EUR</option><option>USD</option></select>
+          </div>
+          <div class="row" style="justify-content:space-between;align-items:center;margin:12px 0 5px"><b style="font-size:14px">Description (modifiable)</b><button class="p" type="button" onclick="aiDesc()">✨ Générer</button></div>
+          <textarea id="pDesc" placeholder="Bluetooth&#10;Étanche&#10;Autonomie 5 jours"></textarea>
+          <div class="two"><div><label>Prix d'achat (privé)</label><input id="pCost" type="number" placeholder="9000" oninput="liveProfit()"></div>
+          <div><label>Stock (facultatif)</label><input id="pStock" type="number" placeholder="10"></div></div>
+          <label>Publier sur</label>
+          <select id="pPlat"><option value="wa">WhatsApp</option><option value="fb">Facebook</option><option value="insta">Instagram</option></select>
+          <div id="profitBox" class="stat" style="margin-top:12px">🔒 Bénéfice (privé) : —</div>
+          <label>Style du message</label>
+          <select id="pStyle">
+            <option value="promo">🔥 Promo</option>
+            <option value="classic">Classique</option>
+            <option value="short">Court</option>
+            
+          </select>
+          <label>Photo ou vidéo du produit</label>
+          <input id="pPhoto" type="file" accept="image/*,video/*">
+          <label>Contact affiché dans l'annonce</label>
+          <input id="contact" placeholder="Ex. WhatsApp +228 ..." oninput="saveContact()">
+          <button class="p" style="width:100%;margin-top:14px" onclick="generate()">Générer mon annonce</button>
+          <div id="genMsg" class="msg"></div>
+        </div>
+        <div class="card">
+          <h2>Aperçu</h2>
+          <div id="preview" class="preview">Ton annonce apparaîtra ici.</div>
+          <div class="row">
+            <button onclick="copyAd()">Copier</button>
+            <button class="g" onclick="shareAd()">WhatsApp</button>
+            <button onclick="shareAny()">📤 Instagram / Facebook</button>
+            <button onclick="downloadAd()">Télécharger</button>
+            <button onclick="saveAd()">💾 Enregistrer</button>
+          </div>
+          <div id="adMsg" class="msg"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CATALOGUE -->
+    <div id="tab-cat" class="tabpane hidden">
+      <div class="card">
+        <h2>📦 Mon catalogue</h2>
+        <p class="muted">Tes annonces enregistrées. Réutilise-les en un clic.</p>
+        <div id="catList"></div>
+      </div>
+    </div>
+
+    <!-- CATALOGUE PUBLIC -->
+    <div id="tab-pub" class="tabpane hidden">
+      <div class="card">
+        <h2>🔗 Mon catalogue public</h2>
+        <p class="muted">Un lien à envoyer à tes clients : ils voient tes produits, photos, prix et disponibilité. Jamais ton prix d'achat, ton bénéfice ni ton stock exact. Il se met à jour tout seul.</p>
+        <label>Nom du lien</label>
+        <input id="pubSlug" placeholder="ex. boutique-ama">
+        <label>Numéro WhatsApp pour les commandes (affiché aux clients)</label>
+        <input id="pubPhone" placeholder="ex. 22890123456">
+        <div class="row"><button class="p" onclick="createCat()">Créer / mettre à jour mon catalogue</button><button onclick="testServer()">🔧 Tester le serveur</button></div>
+        <div id="pubLink" class="preview hidden" style="min-height:0;margin-top:12px"></div>
+        <div id="pubBtns" class="row hidden"><button onclick="copyCatLink()">Copier le lien</button><button class="g" onclick="shareCatLink()">WhatsApp</button><button onclick="window.open(catLink(),'_blank')">Voir comme un client</button></div>
+        <div id="pubMsg" class="msg"></div>
+      </div>
+    </div>
+
+    <!-- LISTE DE PRIX -->
+    <div id="tab-prix" class="tabpane hidden">
+      <div class="card">
+        <h2>🏷️ Liste de prix</h2>
+        <p class="muted">Créée automatiquement depuis l'onglet Stock. Les produits en rupture sont masqués.</p>
+        <div id="priceBox" class="preview" style="min-height:80px"></div>
+        <div class="row"><button onclick="copyPrices()">Copier</button><button class="g" onclick="sharePrices()">WhatsApp</button></div>
+        <div id="priceMsg" class="msg"></div>
+      </div>
+    </div>
+
+    <!-- STOCK ET BENEFICE -->
+    <div id="tab-stk" class="tabpane hidden">
+      <div class="card">
+        <h2>📊 Stock et bénéfice</h2>
+        <div id="stats" class="stats"></div>
+        <p class="muted">Renseigne le prix d'achat de chaque produit pour obtenir un bénéfice exact.</p>
+      </div>
+      <div class="card">
+        <h2>Ajouter un produit</h2>
+        <label>Nom du produit</label><input id="sName" placeholder="Ex. Montre connectée">
+        <div class="two"><div><label>Prix de vente</label><input id="sPrice" type="number" placeholder="15000"></div>
+        <div><label>Prix d'achat</label><input id="sCost" type="number" placeholder="9000"></div></div>
+        <div class="two"><div><label>Quantité en stock</label><input id="sStock" type="number" placeholder="10"></div>
+        <div><label>Devise</label><select id="sCur"><option>FCFA</option><option>EUR</option><option>USD</option></select></div></div>
+        <label>Photo du produit</label>
+        <input id="sPhoto" type="file" accept="image/*">
+        <div id="sPhotoPrev" class="muted"></div>
+        <div class="row"><button id="sBtn" class="p" style="margin-top:12px" onclick="addProduct()">Ajouter</button><button id="sCancel" class="hidden" style="margin-top:12px" onclick="cancelEdit()">Annuler la modification</button></div>
+        <div id="stkMsg" class="msg"></div>
+      </div>
+      <div class="card"><h2>Mes produits</h2><div id="stkList"></div></div>
+      <div class="card"><h2>Dernières ventes</h2><div id="salesList"></div>
+        <div class="row"><button class="d" onclick="resetSales()">Effacer l'historique</button></div></div>
+    </div>
+
+    <!-- REPONSES RAPIDES -->
+    <div id="tab-rep" class="tabpane hidden">
+      <div class="card">
+        <h2>💬 Réponses rapides</h2>
+        <p class="muted">Modèles pour répondre vite à tes clients. Copie-les ou envoie-les sur WhatsApp.</p>
+        <label>Titre</label>
+        <input id="rTitle" placeholder="Ex. Livraison">
+        <label>Message</label>
+        <textarea id="rText" placeholder="Ex. Oui, nous livrons partout en ville."></textarea>
+        <button class="p" style="margin-top:10px" onclick="addReply()">Ajouter</button>
+        <div id="repList"></div>
+      </div>
+    </div>
+
+    <!-- GROUPES -->
+    <div id="tab-grp" class="tabpane hidden">
+      <div class="card">
+        <h2>👥 Publier dans mes groupes</h2>
+        <p class="muted">WhatsApp interdit l'envoi automatique. Avec la dernière annonce générée et une photo, le téléphone ouvre le partage : tu choisis WhatsApp puis le groupe. Sinon, le message est copié et tu le colles toi-même.</p>
+        <label>Nom du groupe</label>
+        <input id="gName" placeholder="Ex. Vendeurs Lomé">
+        <label>Lien d'invitation (facultatif)</label>
+        <input id="gLink" placeholder="https://chat.whatsapp.com/...">
+        <button class="p" style="margin-top:10px" onclick="addGroup()">Ajouter le groupe</button>
+        <label>Message à publier</label>
+        <select id="gAd"></select>
+        <div id="grpList"></div>
+        <div id="grpMsg" class="msg"></div>
+      </div>
+    </div>
+
+    <!-- ABONNEMENT -->
+    <div id="tab-abo" class="tabpane hidden">
+      <div class="card">
+        <h2>⭐ Abonnement</h2>
+        <p id="aboState"></p>
+        <p>Prix : <b>5 000 FCFA par mois</b></p>
+        <p>1. Paye par Mobile Money au <b id="payNumber"></b><br>
+           2. Envoie-moi la preuve sur WhatsApp<br>
+           3. Entre le code reçu ci-dessous</p>
+        <button class="g" onclick="contactPay()">Envoyer ma preuve sur WhatsApp</button>
+        <label>Code d'activation</label>
+        <input id="activCode" placeholder="VE-XXXXXX-30-XXXXXX">
+        <button class="p" style="margin-top:10px" onclick="activate()">Activer</button>
+        <div id="aboStatus" class="msg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== CONFIGURATION ===== */
+const CONFIG = {
+  ownerWhatsApp: "22892809280",
+  payNumber: "+228 92 80 92 80",
+  secret: "5M@i200435",
+  trialDays: 7,
+  lowStock: 3,
+  aiEndpoint: "/api/analyze", /* fonction IA du site (voir LISEZ-MOI) */
+  priceLabel: "5 000 FCFA"
+};
+
+/* ===== STOCKAGE LOCAL ===== */
+const MEM = {};
+const DB = {
+  get(k, d){ try{ const v = localStorage.getItem("ve_"+k); return v ? JSON.parse(v) : d; }catch(e){ return (k in MEM) ? MEM[k] : d; } },
+  set(k, v){ try{ localStorage.setItem("ve_"+k, JSON.stringify(v)); }catch(e){
+    MEM[k] = JSON.parse(JSON.stringify(v));
+    if(e && (e.name === "QuotaExceededError" || e.code === 22)) alert("Mémoire du téléphone pleine : les dernières modifications ne seront pas conservées. Supprime des produits ou des photos.");
+  } }
+};
+let user = null, photoThumb = "", photoData = "", photoFile = null, lastAd = "", authMode = "login";
+
+/* ===== OUTILS ===== */
+function el(id){ return document.getElementById(id); }
+function v(id){ return el(id).value.trim(); }
+function esc(t){ return String(t).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function say(id, msg, ok=true){ const e = el(id); e.textContent = msg; e.style.color = ok ? "var(--green)" : "var(--red)"; }
+function formatPrice(p, cur){ return Number(p).toLocaleString("fr-FR") + " " + cur; }
+async function hash(txt){
+  if(window.crypto && crypto.subtle){
+    try{
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(txt));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+    }catch(e){}
+  }
+  let h1 = 5381, h2 = 52711;
+  for(let i=0;i<txt.length;i++){ const c = txt.charCodeAt(i); h1 = (Math.imul(h1,33) ^ c)>>>0; h2 = (Math.imul(h2,31) + c)>>>0; }
+  return "f"+h1.toString(16)+h2.toString(16);
+}
+function checksum(str){
+  let h = 0; const s = str + CONFIG.secret;
+  for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) >>> 0; }
+  return h.toString(36).toUpperCase().padStart(6,"0").slice(0,6);
+}
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); return true; }
+  catch(e){
+    const a = document.createElement("textarea"); a.value = t; document.body.appendChild(a); a.select();
+    let ok = false; try{ ok = document.execCommand("copy"); }catch(x){}
+    a.remove(); return ok;
+  }
+}
+function wa(text){ window.open("https://wa.me/?text="+encodeURIComponent(text), "_blank"); }
+
+/* ===== AUTHENTIFICATION LOCALE ===== */
+function showAuth(mode){
+  authMode = mode;
+  el("tabLogin").classList.toggle("p", mode==="login");
+  el("tabSignup").classList.toggle("p", mode==="signup");
+  el("signupFields").classList.toggle("hidden", mode!=="signup");
+  el("authBtn").textContent = mode==="login" ? "Se connecter" : "Créer mon compte";
+  el("authMsg").textContent = "";
+}
+async function submitAuth(){
+  try{ await submitAuthInner(); }catch(e){ el("authMsg").textContent = "Erreur : "+e.message; }
+}
+async function submitAuthInner(){
+  const id = v("authId").toLowerCase(), pass = el("authPass").value, shop = v("shopName"), msg = el("authMsg");
+  if(!id || pass.length < 4){ msg.textContent = "Entre ton identifiant et un mot de passe (4 caractères minimum)."; return; }
+  const users = DB.get("users", {});
+  const h = await hash(pass + id);
+  if(authMode === "signup"){
+    if(users[id]){ msg.textContent = "Ce compte existe déjà. Connecte-toi."; return; }
+    users[id] = { id, shop: shop || "Ma boutique", pass: h, created: Date.now(), paidUntil: 0, usedCodes: [] };
+    DB.set("users", users);
+    DB.set("data_"+id, { catalog:[], replies:defaultReplies(), groups:[] });
+  } else if(!users[id] || users[id].pass !== h){
+    msg.textContent = "Identifiant ou mot de passe incorrect."; return;
+  }
+  DB.set("session", id);
+  startApp(id);
+}
+function logout(){ DB.set("session", null); location.reload(); }
+
+function startApp(id){
+  user = DB.get("users", {})[id];
+  el("auth").classList.add("hidden");
+  el("main").classList.remove("hidden");
+  el("userLabel").textContent = user.shop;
+  el("payNumber").textContent = CONFIG.payNumber;
+  el("contact").value = DB.get("contact_"+id, "");
+  renderAll();
+  showTab("gen");
+}
+
+/* ===== ABONNEMENT ===== */
+function subStatus(){
+  const now = Date.now(), trialEnd = user.created + CONFIG.trialDays*86400000;
+  if(user.paidUntil > now) return { active:true, type:"paid", daysLeft:Math.ceil((user.paidUntil-now)/86400000) };
+  if(trialEnd > now) return { active:true, type:"trial", daysLeft:Math.ceil((trialEnd-now)/86400000) };
+  return { active:false, type:"expired", daysLeft:0 };
+}
+function refreshSub(){
+  const s = subStatus(), b = el("subBadge");
+  b.className = "badge " + (s.type==="paid" ? "ok" : s.type==="trial" ? "" : "warn");
+  b.textContent = s.type==="paid" ? "Abonné • "+s.daysLeft+" j" : s.type==="trial" ? "Essai • "+s.daysLeft+" j" : "Essai terminé";
+  el("lockBox").classList.toggle("hidden", s.active);
+  el("aboState").textContent = s.type==="paid" ? "Abonnement actif : il te reste "+s.daysLeft+" jour(s)."
+    : s.type==="trial" ? "Essai gratuit : il te reste "+s.daysLeft+" jour(s)."
+    : "Ton essai est terminé. Active ton abonnement pour continuer.";
+}
+function activate(){
+  const code = v("activCode").toUpperCase(), parts = code.split("-");
+  if(parts.length !== 4 || parts[0] !== "VE"){ say("aboStatus","Code invalide.",false); return; }
+  const rnd = parts[1], days = parts[2], chk = parts[3];
+  if(checksum(rnd+"-"+days+"-"+user.id) !== chk){ say("aboStatus","Code invalide pour ce compte.",false); return; }
+  const users = DB.get("users", {}), u = users[user.id];
+  if(u.usedCodes.includes(code)){ say("aboStatus","Ce code a déjà été utilisé.",false); return; }
+  u.paidUntil = Math.max(Date.now(), u.paidUntil || 0) + Number(days)*86400000;
+  u.usedCodes.push(code);
+  users[user.id] = u; DB.set("users", users); user = u;
+  el("activCode").value = "";
+  say("aboStatus","✅ Abonnement activé pour "+days+" jours !");
+  refreshSub();
+}
+/* POUR TOI : touche F12, onglet Console, puis tape :
+   genererCode("identifiant-du-vendeur", 30)
+   L'identifiant doit être EXACTEMENT celui utilisé à l'inscription. */
+function genererCode(idVendeur, jours = 30){
+  idVendeur = String(idVendeur).trim().toLowerCase();
+  const rnd = Math.random().toString(36).slice(2,8).toUpperCase();
+  const code = "VE-"+rnd+"-"+jours+"-"+checksum(rnd+"-"+jours+"-"+idVendeur);
+  console.log("Code pour "+idVendeur+" : "+code);
+  return code;
+}
+window.genererCode = genererCode;
+function contactPay(){
+  const t = "Bonjour, je viens de payer mon abonnement VenteExpress ("+CONFIG.priceLabel+"). Mon identifiant : "+user.id;
+  window.open("https://wa.me/"+CONFIG.ownerWhatsApp+"?text="+encodeURIComponent(t), "_blank");
+}
+function guard(){
+  if(subStatus().active) return true;
+  refreshSub(); showTab("abo"); return false;
+}
+
+/* ===== NAVIGATION ===== */
+function showTab(name){
+  document.querySelectorAll(".tabpane").forEach(p => p.classList.add("hidden"));
+  el("tab-"+name).classList.remove("hidden");
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.tab===name));
+  if(name==="cat") renderCatalog();
+  if(name==="rep") renderReplies();
+  if(name==="grp") renderGroups();
+  if(name==="prix") renderPrices();
+  if(name==="pub") renderPub();
+  if(name==="stk") renderStock();
+  refreshSub();
+}
+function data(){
+  const d = DB.get("data_"+user.id, {});
+  d.catalog = d.catalog || []; d.replies = d.replies || []; d.groups = d.groups || [];
+  d.products = d.products || []; d.sales = d.sales || [];
+  if(!d.replies.some(r => /command/i.test(r.title))){ d.replies.push({id:uid(), title:"Comment commander ?", text:"Pour commander, envoyez-moi le nom du produit, la quantité et votre quartier. Je confirme et je prépare la livraison 🙏"}); saveData(d); }
+  return d;
+}
+let pubT;
+function saveData(d){ DB.set("data_"+user.id, d); clearTimeout(pubT); pubT = setTimeout(() => { if(user && pubCfg() && pubCfg().on) publishCat(); }, 1500); }
+function renderAll(){ renderCatalog(); renderReplies(); renderGroups(); renderStock(); renderPrices(); }
+function delItem(list, id){
+  if(list === "products" && !confirm("Supprimer ce produit ? Il disparaîtra aussi du catalogue public.")) return;
+  const d = data(); d[list] = d[list].filter(x => x.id !== id); saveData(d); renderAll();
+}
+
+/* ===== GENERATEUR D'ANNONCE ===== */
+el("pPhoto").addEventListener("change", function(e){
+  const f = e.target.files[0];
+  if(!f){ photoData = ""; photoThumb = ""; photoFile = null; return; }
+  photoFile = f;
+  if(f.type.indexOf("video")===0){ videoPoster(f); return; }
+  photoData = ""; photoThumb = "";
+  readPhoto(f, (err, t, full) => {
+    if(err){ say("genMsg", err, false); e.target.value = ""; photoFile = null; return; }
+    photoThumb = t; photoData = t; say("genMsg","Photo prête.");
+  });
+});
+const PHOTO_MAX = 25*1024*1024;
+function readPhoto(f, cb){
+  if(!f.type || f.type.indexOf("image/") !== 0){ cb("Ce fichier n'est pas une image.", ""); return; }
+  if(f.size > PHOTO_MAX){ cb("Photo trop lourde (max 25 Mo).", ""); return; }
+  const r = new FileReader();
+  r.onerror = () => cb("Impossible de lire la photo. Réessaie.", "");
+  r.onload = () => makeThumb(r.result, t => t ? cb("", t, r.result) : cb("Format de photo non pris en charge. Utilise une photo JPEG ou PNG (sur iPhone : Réglages > Appareil photo > Formats > Le plus compatible).", ""));
+  r.readAsDataURL(f);
+}
+let sPhotoData = "", editId = null;
+el("sPhoto").addEventListener("change", function(e){
+  const f = e.target.files[0]; sPhotoData = ""; el("sPhotoPrev").textContent = "";
+  if(!f) return;
+  say("stkMsg","Traitement de la photo…");
+  readPhoto(f, (err, t) => {
+    if(err){ say("stkMsg", err, false); e.target.value = ""; return; }
+    sPhotoData = t; say("stkMsg","Photo prête."); el("sPhotoPrev").innerHTML = '<img src="'+esc(t)+'" alt="Aperçu" style="max-width:120px;border-radius:10px;margin-top:6px">';
+  });
+});
+function saveContact(){ if(user) DB.set("contact_"+user.id, el("contact").value); }
+
+function buildAd(){
+  const n = v("pName"), p = v("pPrice"), cur = el("pCur").value, st = el("pPlat").value==="insta" ? "insta" : el("pStyle").value, c = v("contact"), pl = el("pPlat").value;
+  const d = v("pDesc").split("\n").map(x => x.trim()).filter(Boolean);
+  if(!n || !p || !d.length) return "";
+  const price = formatPrice(p, cur) .replace(/\u202f/g,"\u00a0"), ct = c ? "\n📲 "+c : "";
+  if(st === "insta") return "✨ "+n+" ✨\n\n"+d.map(x => "▪️ "+x).join("\n")+"\n\n💰 "+price+"\n🚚 Livraison disponible\n📩 Commande en message privé"+ct+"\n\n"+tags(n);
+  if(st === "short") return "🔥 "+n+" — "+price+"\n"+d.join(" • ")+"\n📩 Écrivez-nous pour commander !"+ct;
+  if(st === "classic") return n+"\n\nPrix : "+price+"\n\n"+d.map(x => "• "+x).join("\n")+"\n\nLivraison disponible.\nContactez-nous pour commander."+ct;
+  if(pl === "fb") return "🔥 "+n+" 🔥\n\n"+d.map(x => "✅ "+x).join("\n")+"\n\n💰 Prix : "+price+"\n🚚 Livraison disponible\n\n👉 Commentez ou envoyez-nous un message privé pour commander !"+ct;
+  return "🔥 NOUVEAUTÉ — *"+n.toUpperCase()+"* 🔥\n\n"+d.map(x => "✅ "+x).join("\n")+"\n\n💰 Prix : "+price+"\n🚚 Livraison disponible\n\n📩 Intéressé(e) ? Écrivez-nous maintenant pour commander !"+ct;
+}
+function generate(){
+  if(!guard()) return;
+  const t = buildAd();
+  if(!t){ say("genMsg","Remplis le nom, le prix et au moins une caractéristique.",false); return; }
+  lastAd = t;
+  el("preview").innerHTML = ((photoData||"").startsWith("data:image/") ? '<img src="'+esc(photoData)+'" alt="Produit">' : "") + esc(t);
+  say("genMsg","Annonce prête. Copie-la, partage-la ou enregistre-la.");
+}
+async function copyAd(){
+  if(!lastAd){ say("adMsg","Génère d'abord une annonce.",false); return; }
+  say("adMsg", (await copyText(lastAd)) ? "Texte copié." : "Copie impossible, sélectionne le texte à la main.", true);
+}
+async function shareAd(){
+  if(!lastAd){ say("adMsg","Génère d'abord une annonce.",false); return; }
+  if(photoFile && navigator.canShare){
+    try{
+      const f = new File([photoFile], photoFile.name || "produit.jpg", {type: photoFile.type || "image/jpeg"});
+      if(navigator.canShare({files:[f]})){
+        await navigator.share({files:[f], text:lastAd});
+        return;
+      }
+    }catch(e){ if(e && e.name === "AbortError") return; }
+  }
+  if(photoFile) say("adMsg","Ce navigateur ne peut pas envoyer la photo avec le texte. Le texte part sur WhatsApp : ajoute la photo à la main avec le trombone.",false);
+  wa(lastAd);
+}
+function downloadAd(){
+  if(!lastAd){ say("adMsg","Génère d'abord une annonce.",false); return; }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([lastAd], {type:"text/plain;charset=utf-8"}));
+  a.download = "annonce.txt"; a.click(); URL.revokeObjectURL(a.href);
+}
+function saveAd(){
+  if(!guard()) return;
+  if(!lastAd){ say("adMsg","Génère d'abord une annonce.",false); return; }
+  const d = data();
+  d.catalog.unshift({ id:uid(), name:v("pName"), price:v("pPrice")+" "+el("pCur").value, text:lastAd, photo:photoThumb });
+  upsertProduct(d);
+  saveData(d); renderAll();
+  say("adMsg","Enregistrée dans ton catalogue et ton stock.");
+}
+
+/* ===== CATALOGUE ===== */
+function renderCatalog(){
+  const d = data();
+  el("catList").innerHTML = d.catalog.length ? d.catalog.map(c =>
+    '<div class="item">'+(c.photo ? '<img src="'+c.photo+'" alt="" style="width:90px;border-radius:8px;float:right;margin-left:8px">' : '')+'<b>'+esc(c.name)+' — '+esc(c.price)+'</b><pre>'+esc(c.text)+'</pre>'+
+    '<div class="row"><button onclick="copyById(\'catalog\',\''+c.id+'\')">Copier</button>'+
+    '<button class="g" onclick="shareById(\'catalog\',\''+c.id+'\')">WhatsApp</button>'+
+    '<button class="d" onclick="delItem(\'catalog\',\''+c.id+'\')">Supprimer</button></div></div>'
+  ).join("") : '<p class="muted">Aucune annonce enregistrée. Génère une annonce puis clique sur Enregistrer.</p>';
+}
+function textById(list, id){ const x = data()[list].find(i => i.id === id); return x ? x.text : ""; }
+async function copyById(list, id){ await copyText(textById(list, id)); }
+function shareById(list, id){ wa(textById(list, id)); }
+
+/* ===== REPONSES RAPIDES ===== */
+function defaultReplies(){
+  return [
+    {id:uid(), title:"Prix", text:"Bonjour 👋 Le prix est indiqué sur l'annonce. Je peux vous faire une petite remise si vous prenez 2 articles."},
+    {id:uid(), title:"Disponibilité", text:"Bonjour ! Oui, le produit est disponible. Voulez-vous que je vous le réserve ?"},
+    {id:uid(), title:"Livraison", text:"Oui, nous livrons. Dites-moi votre quartier et je vous donne le prix et le délai de livraison."},
+    {id:uid(), title:"Paiement", text:"Vous pouvez payer par Mobile Money ou à la livraison. Je vous envoie le numéro dès que vous confirmez."},
+    {id:uid(), title:"Relance", text:"Bonjour 🙂 Vous étiez intéressé(e) par notre produit. Il en reste peu, souhaitez-vous commander ?"},
+    {id:uid(), title:"Merci", text:"Merci pour votre commande 🙏 Nous vous contactons très vite pour la livraison."}
+  ];
+}
+function addReply(){
+  if(!guard()) return;
+  const t = v("rTitle"), x = v("rText");
+  if(!t || !x) return;
+  const d = data(); d.replies.push({id:uid(), title:t, text:x}); saveData(d);
+  el("rTitle").value = ""; el("rText").value = ""; renderReplies();
+}
+function renderReplies(){
+  const d = data();
+  el("repList").innerHTML = d.replies.map(r =>
+    '<div class="item"><b>'+esc(r.title)+'</b><pre>'+esc(r.text)+'</pre>'+
+    '<div class="row"><button onclick="copyById(\'replies\',\''+r.id+'\')">Copier</button>'+
+    '<button class="g" onclick="shareById(\'replies\',\''+r.id+'\')">WhatsApp</button>'+
+    '<button class="d" onclick="delItem(\'replies\',\''+r.id+'\')">Supprimer</button></div></div>'
+  ).join("");
+}
+
+/* ===== GROUPES ===== */
+function addGroup(){
+  if(!guard()) return;
+  const n = v("gName"), l = v("gLink");
+  if(!n) return;
+  const d = data(); d.groups.push({id:uid(), name:n, link:l}); saveData(d);
+  el("gName").value = ""; el("gLink").value = ""; renderGroups();
+}
+function renderGroups(){
+  const d = data(), sel = el("gAd"), old = sel.value;
+  sel.innerHTML = '<option value="last">Dernière annonce générée</option>' +
+    d.catalog.map(c => '<option value="'+c.id+'">'+esc(c.name)+'</option>').join("");
+  if([...sel.options].some(o => o.value === old)) sel.value = old;
+  el("grpList").innerHTML = d.groups.length ? d.groups.map(g =>
+    '<div class="item"><b>'+esc(g.name)+'</b><div class="row">'+
+    '<button class="g" onclick="postGroup(\''+g.id+'\')">Publier dans ce groupe</button>'+
+    '<button class="d" onclick="delItem(\'groups\',\''+g.id+'\')">Supprimer</button></div></div>'
+  ).join("") : '<p class="muted">Aucun groupe ajouté.</p>';
+}
+async function postGroup(id){
+  const sel = el("gAd").value, d = data();
+  const text = sel === "last" ? lastAd : textById("catalog", sel);
+  if(!text){ say("grpMsg","Génère ou choisis d'abord une annonce.",false); return; }
+  const g = d.groups.find(x => x.id === id);
+  if(sel === "last" && photoFile && navigator.canShare){
+    try{
+      const f = new File([photoFile], photoFile.name || "produit.jpg", {type: photoFile.type || "image/jpeg"});
+      if(navigator.canShare({files:[f]})){
+        say("grpMsg","Choisis WhatsApp, puis le groupe « "+g.name+" ».");
+        await navigator.share({files:[f], text:text});
+        return;
+      }
+    }catch(e){ if(e && e.name === "AbortError") return; }
+  }
+  await copyText(text);
+  say("grpMsg","Message copié (sans photo). Colle-le dans le groupe « "+g.name+" » et ajoute la photo avec le +.");
+  if(g.link) window.open(g.link, "_blank");
+}
+
+/* ===== INSTAGRAM / FACEBOOK ===== */
+function tags(n){
+  const w = n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").split(/[^a-z0-9]+/).filter(x => x.length > 3).map(x => "#"+x);
+  return w.concat(["#vente","#boutique","#bonplan","#livraison"]).join(" ");
+}
+async function shareAny(){
+  if(!lastAd){ say("adMsg","Génère d'abord une annonce.",false); return; }
+  if(navigator.share){
+    try{
+      const o = { text:lastAd };
+      if(photoFile){
+        const f = new File([photoFile], photoFile.name || "produit.jpg", {type: photoFile.type || "image/jpeg"});
+        if(navigator.canShare && navigator.canShare({files:[f]})) o.files = [f];
+      }
+      await navigator.share(o); return;
+    }catch(e){ if(e && e.name === "AbortError") return; }
+  }
+  await copyText(lastAd);
+  say("adMsg","Texte copié. Ouvre Instagram ou Facebook, colle-le et ajoute ta photo.");
+}
+function makeThumb(src, cb){
+  const i = new Image();
+  i.onload = () => {
+    const k = Math.min(1, 480/Math.max(i.width, i.height)), c = document.createElement("canvas");
+    c.width = Math.round(i.width*k); c.height = Math.round(i.height*k);
+    c.getContext("2d").drawImage(i, 0, 0, c.width, c.height);
+    cb(c.toDataURL("image/jpeg", 0.7));
+  };
+  i.onerror = () => cb("");
+  i.src = src;
+}
+
+/* ===== STOCK, PRIX, BENEFICE ===== */
+function money(n, c){ return Number(n).toLocaleString("fr-FR")+" "+c; }
+function sumBy(arr, f){ const m = {}; arr.forEach(x => { const c = x.cur || "FCFA"; m[c] = (m[c]||0) + f(x); }); return m; }
+function fmtMap(m){ const k = Object.keys(m); return k.length ? k.map(c => money(m[c], c)).join(" · ") : "0"; }
+function upsertProduct(d){
+  const name = v("pName"), cost = v("pCost"), stock = v("pStock");
+  let p = d.products.find(x => x.name.toLowerCase() === name.toLowerCase());
+  if(!p){ p = { id:uid(), name:name, cost:0, stock:null, photo:"" }; d.products.unshift(p); }
+  p.price = Number(v("pPrice")); p.cur = el("pCur").value;
+  if(cost !== "") p.cost = Number(cost);
+  if(stock !== "") p.stock = Number(stock);
+  if(photoThumb) p.photo = photoThumb;
+  p.desc = v("pDesc");
+}
+function addProduct(){
+  if(!guard()) return;
+  const n = v("sName"), p = v("sPrice"), s = v("sStock");
+  if(!n || !p){ say("stkMsg","Entre au moins le nom et le prix de vente.",false); return; }
+  const d = data();
+  if(editId){
+    const q = d.products.find(x => x.id === editId);
+    if(!q){ cancelEdit(); say("stkMsg","Produit introuvable.",false); return; }
+    q.name = n; q.price = Number(p); q.cur = el("sCur").value; q.cost = Number(v("sCost")||0); q.stock = s===""?null:Number(s);
+    if(sPhotoData) q.photo = sPhotoData;
+    saveData(d); cancelEdit(); renderAll(); say("stkMsg","Produit modifié."); return;
+  }
+  d.products.unshift({ id:uid(), name:n, price:Number(p), cur:el("sCur").value, cost:Number(v("sCost")||0), stock:s===""?null:Number(s), photo:sPhotoData });
+  saveData(d);
+  ["sName","sPrice","sCost","sStock"].forEach(i => el(i).value = "");
+  el("sPhoto").value = ""; sPhotoData = ""; el("sPhotoPrev").textContent = "";
+  renderAll(); say("stkMsg","Produit ajouté.");
+}
+function editProduct(id){
+  const p = data().products.find(x => x.id === id); if(!p) return;
+  editId = id;
+  el("sName").value = p.name; el("sPrice").value = p.price; el("sCost").value = p.cost || ""; el("sStock").value = p.stock === null ? "" : p.stock; el("sCur").value = p.cur || "FCFA";
+  sPhotoData = ""; el("sPhoto").value = "";
+  el("sPhotoPrev").innerHTML = p.photo && PHOTO_OK.test(p.photo) ? '<img src="'+esc(p.photo)+'" alt="Photo actuelle" style="max-width:120px;border-radius:10px;margin-top:6px"><br>Choisis une nouvelle photo pour la remplacer.' : "";
+  el("sBtn").textContent = "Enregistrer les modifications"; el("sCancel").classList.remove("hidden");
+  el("sName").scrollIntoView({behavior:"smooth", block:"center"});
+  say("stkMsg","Modification de « "+p.name+" ».");
+}
+function cancelEdit(){
+  editId = null; sPhotoData = "";
+  ["sName","sPrice","sCost","sStock"].forEach(i => el(i).value = ""); el("sPhoto").value = ""; el("sPhotoPrev").textContent = "";
+  el("sBtn").textContent = "Ajouter"; el("sCancel").classList.add("hidden");
+}
+function qtyOf(id){ return Math.floor(Number(el("q_"+id).value) || 0); }
+function sell(id){
+  if(!guard()) return;
+  const q = qtyOf(id), d = data(), p = d.products.find(x => x.id === id);
+  if(!p || q < 1) return;
+  if(p.stock !== null && q > p.stock){ say("stkMsg","Stock insuffisant : il reste "+p.stock+" × "+p.name+".",false); return; }
+  if(p.stock !== null) p.stock -= q;
+  d.sales.unshift({ id:uid(), name:p.name, qty:q, price:p.price, cost:p.cost, cur:p.cur, date:Date.now() });
+  saveData(d); renderAll(); say("stkMsg",q+" vente(s) enregistrée(s).");
+}
+function restock(id){
+  if(!guard()) return;
+  const q = qtyOf(id), d = data(), p = d.products.find(x => x.id === id);
+  if(!p || q < 1) return;
+  p.stock = (p.stock || 0) + q; saveData(d); renderAll(); say("stkMsg","Stock mis à jour.");
+}
+function resetSales(){
+  if(!confirm("Effacer tout l'historique des ventes ?")) return;
+  const d = data(); d.sales = []; saveData(d); renderAll();
+}
+function renderStock(){
+  const d = data();
+  const rev = sumBy(d.sales, s => s.qty*s.price), prof = sumBy(d.sales, s => s.qty*(s.price-s.cost));
+  const val = sumBy(d.products.filter(p => p.stock), p => p.stock*p.cost);
+  el("stats").innerHTML =
+    '<div class="stat"><small>Chiffre d\'affaires</small><b>'+fmtMap(rev)+'</b></div>'+
+    '<div class="stat"><small>Bénéfice réalisé</small><b class="pg">'+fmtMap(prof)+'</b></div>'+
+    '<div class="stat"><small>Valeur du stock (achat)</small><b>'+fmtMap(val)+'</b></div>'+
+    '<div class="stat"><small>Articles vendus</small><b>'+d.sales.reduce((a,s) => a+s.qty, 0)+'</b></div>';
+  el("stkList").innerHTML = d.products.length ? d.products.map(p => {
+    const m = p.price - p.cost;
+    const st = p.stock === null ? '<span class="badge">Stock non suivi</span>'
+      : p.stock === 0 ? '<span class="badge warn">Rupture</span>'
+      : p.stock <= CONFIG.lowStock ? '<span class="badge warn">⚠ Stock faible : '+p.stock+'</span>'
+      : '<span class="badge ok">Stock : '+p.stock+'</span>';
+    return '<div class="item">'+(PHOTO_OK.test(p.photo||"") ? '<img src="'+esc(p.photo)+'" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px;float:right;margin-left:8px">' : '')+'<b>'+esc(p.name)+' '+st+'</b>'+
+      '<span class="muted">Vente '+money(p.price,p.cur)+' • Achat '+money(p.cost,p.cur)+' • Marge <span class="'+(m>=0?'pg':'pr')+'">'+money(m,p.cur)+'</span> par pièce</span>'+
+      '<div class="row"><button onclick="adj(\''+p.id+'\',-1)" aria-label="Moins">−</button><input class="qty" type="number" min="0" value="'+(p.stock===null?"":p.stock)+'" placeholder="Qté" onchange="setStock(\''+p.id+'\',this.value)" aria-label="Quantité en stock"><button onclick="adj(\''+p.id+'\',1)" aria-label="Plus">+</button><input id="q_'+p.id+'" type="hidden" value="1">'+
+      '<button class="p" onclick="sell(\''+p.id+'\')">Vendu</button>'+
+      '<button onclick="editProduct(\''+p.id+'\')">Modifier</button>'+
+      '<button class="d" onclick="delItem(\'products\',\''+p.id+'\')">Supprimer</button></div></div>';
+  }).join("") : '<p class="muted">Aucun produit. Ajoute-en un ci-dessus ou enregistre une annonce.</p>';
+  el("salesList").innerHTML = d.sales.length ? d.sales.slice(0,10).map(s =>
+    '<div class="muted" style="margin-top:6px">'+new Date(s.date).toLocaleDateString("fr-FR")+' — '+s.qty+' × '+esc(s.name)+' • bénéfice '+money(s.qty*(s.price-s.cost), s.cur||"FCFA")+'</div>'
+  ).join("") : '<p class="muted">Aucune vente enregistrée.</p>';
+}
+function priceText(){
+  const items = data().products.filter(p => p.stock !== 0);
+  if(!items.length) return "";
+  const c = v("contact");
+  return "📋 LISTE DE PRIX — "+user.shop+"\n\n"+items.map(p => "• "+p.name+" : "+money(p.price,p.cur)).join("\n")+(c ? "\n\n📲 "+c : "");
+}
+function renderPrices(){ el("priceBox").textContent = priceText() || "Aucun produit disponible. Ajoute des produits dans l'onglet Stock."; }
+async function copyPrices(){ const t = priceText(); if(!t) return; say("priceMsg", (await copyText(t)) ? "Liste copiée." : "Copie impossible.", true); }
+function sharePrices(){ const t = priceText(); if(t) wa(t); }
+
+/* ===== V2.1 : vidéo, description, bénéfice, stock ===== */
+function videoPoster(f){
+  const vd = document.createElement("video"); vd.muted = true; vd.playsInline = true; vd.preload = "auto";
+  vd.src = URL.createObjectURL(f);
+  vd.onloadeddata = () => { vd.currentTime = Math.min(1, (vd.duration||1)/2); };
+  vd.onseeked = () => {
+    const c = document.createElement("canvas"), k = Math.min(1, 640/Math.max(vd.videoWidth, vd.videoHeight));
+    c.width = Math.round(vd.videoWidth*k); c.height = Math.round(vd.videoHeight*k);
+    c.getContext("2d").drawImage(vd, 0, 0, c.width, c.height);
+    photoData = photoThumb = c.toDataURL("image/jpeg", 0.7); URL.revokeObjectURL(vd.src);
+    say("genMsg","Vidéo reçue : une image de couverture a été extraite.");
+  };
+  vd.onerror = () => say("genMsg","Vidéo illisible, essaie une photo.",false);
+}
+async function aiDesc(){
+  const n = v("pName");
+  if(CONFIG.aiEndpoint && photoThumb){
+    try{
+      say("genMsg","Analyse du média en cours…");
+      const r = await fetch(CONFIG.aiEndpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({image:photoThumb,name:n})});
+      const j = await r.json(); if(!r.ok) throw new Error(j.error||"erreur");
+      if(j.name && !n) el("pName").value = j.name;
+      el("pDesc").value = (j.features||[]).join("\n"); say("genMsg","Description générée : modifie-la si besoin."); return;
+    }catch(e){ say("genMsg","IA indisponible ("+e.message+"). Modèle simple utilisé.",false); }
+  }
+  if(!n){ say("genMsg","Entre d'abord le nom du produit.",false); return; }
+  el("pDesc").value = "Produit neuf, de qualité\nIdéal pour vous ou en cadeau\nDisponible immédiatement\nLivraison rapide possible";
+  say("genMsg","Modèle de description créé (sans IA) : adapte-le à ton produit.");
+}
+function liveProfit(){
+  const p = Number(v("pPrice")), c = Number(v("pCost")), cur = el("pCur").value;
+  el("profitBox").innerHTML = (p && c) ? '🔒 Bénéfice (privé) : <b class="'+(p>=c?'pg':'pr')+'">'+money(p-c,cur)+'</b>' : "🔒 Bénéfice (privé) : —";
+}
+function adj(id,delta){ const d = data(), p = d.products.find(x => x.id === id); if(!p) return; p.stock = Math.max(0,(p.stock||0)+delta); saveData(d); renderAll(); }
+function setStock(id,val){ const d = data(), p = d.products.find(x => x.id === id); if(!p) return; p.stock = val===""?null:Math.max(0,Math.floor(Number(val)||0)); saveData(d); renderAll(); }
+
+/* ===== CATALOGUE PUBLIC ===== */
+function pubCfg(){ return user ? DB.get("pub_"+user.id, null) : null; }
+function slugify(t){ return t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40); }
+function catLink(){ const c = pubCfg(); return c ? location.origin+"/catalogue/"+c.slug : ""; }
+function renderPub(){
+  const c = pubCfg();
+  el("pubSlug").value = c ? c.slug : (el("pubSlug").value || slugify(user.shop));
+  el("pubPhone").value = c ? c.phone : el("pubPhone").value;
+  el("pubLink").classList.toggle("hidden", !c); el("pubBtns").classList.toggle("hidden", !c);
+  if(c) el("pubLink").textContent = catLink();
+}
+const PHOTO_OK = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/;
+function shrinkPhoto(src){
+  return new Promise(res => {
+    if(!PHOTO_OK.test(src||"")) return res("");
+    if(src.length < 60000) return res(src);
+    const i = new Image();
+    i.onload = () => {
+      let px = 360, q = 0.6, out = "";
+      for(let n = 0; n < 5; n++){
+        const k = Math.min(1, px/Math.max(i.width, i.height)), c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(i.width*k)); c.height = Math.max(1, Math.round(i.height*k));
+        c.getContext("2d").drawImage(i, 0, 0, c.width, c.height);
+        out = c.toDataURL("image/jpeg", q);
+        if(out.length < 60000) return res(out);
+        px = Math.round(px*0.8); q = Math.max(0.4, q-0.05);
+      }
+      res(out.length < 85000 ? out : "");
+    };
+    i.onerror = () => res("");
+    i.src = src;
+  });
+}
+async function publishCat(){
+  const c = pubCfg(); if(!c) return false;
+  const d = data();
+  try{
+    const list = await Promise.all(d.products.slice(0,60).map(async p => ({ id:p.id, name:p.name, desc:p.desc||"", price:p.price, cur:p.cur, photo:await shrinkPhoto(p.photo), available:p.stock !== 0 })));
+    let body = JSON.stringify({ slug:c.slug, key:c.key, shop:user.shop, phone:c.phone, products:list }), dropped = 0;
+    for(let i = list.length-1; body.length > 4500000 && i >= 0; i--){
+      if(list[i].photo){ list[i].photo = ""; dropped++; body = JSON.stringify({ slug:c.slug, key:c.key, shop:user.shop, phone:c.phone, products:list }); }
+    }
+    const r = await fetch("/api/catalogue", { method:"POST", headers:{"Content-Type":"application/json"}, body });
+    const j = await r.json().catch(() => null);
+    if(r.ok){ say("pubMsg", dropped ? "✅ Catalogue à jour, mais "+dropped+" photo(s) n'ont pas été envoyées (trop lourdes)." : "✅ Catalogue à jour.", true); return true; }
+    let m = j && j.error;
+    if(!m){
+      if(r.status === 404) m = "Serveur du catalogue introuvable (erreur 404) : le dossier netlify/functions n'est pas déployé sur ton site. Appuie sur « Tester le serveur » pour le détail.";
+      else if(r.status === 413) m = "Catalogue trop lourd (erreur 413) : retire des photos ou des produits.";
+      else m = "Le serveur a répondu avec une erreur "+r.status+". Réessaie dans une minute.";
+    }
+    say("pubMsg", m, false); return false;
+  }catch(e){ say("pubMsg","Impossible de joindre le serveur. Vérifie ta connexion internet et réessaie.",false); return false; }
+}
+async function testServer(){
+  say("pubMsg","Test en cours…");
+  const out = [];
+  for(const [nom, url] of [["Catalogue","/api/catalogue?ping=1"],["IA","/api/analyze"]]){
+    try{
+      const r = await fetch(url), j = await r.json().catch(() => null);
+      if(j && j.ok) out.push("✅ "+nom+" : OK"+(j.detail ? " ("+j.detail+")" : ""));
+      else if(j && j.error) out.push("❌ "+nom+" : "+j.error);
+      else out.push("❌ "+nom+" : introuvable (erreur "+r.status+") — la fonction n'est pas déployée");
+    }catch(e){ out.push("❌ "+nom+" : pas de réponse (connexion ?)"); }
+  }
+  say("pubMsg", out.join("\n"), out.every(x => x[0] === "✅")); el("pubMsg").style.whiteSpace = "pre-line";
+}
+async function createCat(){
+  if(!guard()) return;
+  const slug = slugify(v("pubSlug")), phone = v("pubPhone").replace(/[^0-9]/g,"");
+  if(slug.length < 3){ say("pubMsg","Le nom du lien doit contenir au moins 3 lettres ou chiffres.",false); return; }
+  const old = pubCfg();
+  const key = old && old.slug === slug ? old.key : (crypto.randomUUID ? crypto.randomUUID().replace(/-/g,"") : uid()+uid()+uid()+uid());
+  DB.set("pub_"+user.id, { slug, key, phone, on:true });
+  if(!(await publishCat())){ if(!old) DB.set("pub_"+user.id, null); return; }
+  renderPub();
+}
+async function copyCatLink(){ say("pubMsg", (await copyText(catLink())) ? "Lien copié." : "Copie impossible.", true); }
+function shareCatLink(){ wa("🛍️ Voici mon catalogue : "+catLink()); }
+async function loadPublic(slug){
+  el("auth").classList.add("hidden"); const box = el("pubView"); box.classList.remove("hidden");
+  box.innerHTML = '<p class="muted">Chargement…</p>';
+  try{
+    const r = await fetch("/api/catalogue?slug="+slug), j = await r.json();
+    if(!r.ok) throw new Error(j.error || "Catalogue introuvable");
+    document.title = j.shop+" — Catalogue";
+    box.innerHTML = '<h1 class="logo" style="margin:8px 0 16px">'+esc(j.shop)+'</h1>' +
+      (j.products.length ? '<div class="pgrid">'+j.products.map(p =>
+        '<div class="pc">'+(PHOTO_OK.test(p.photo||"") ? '<img src="'+esc(p.photo)+'" alt="'+esc(p.name)+'">' : '')+'<div><h3>'+esc(p.name)+'</h3>'+
+        '<span class="muted">'+esc(p.desc).replace(/\n/g,"<br>")+'</span><div class="pp" style="padding:0">'+esc(money(p.price,p.cur).replace(/\u202f/g,"\u00a0"))+'</div>'+
+        (p.available ? '<span class="badge ok">Disponible</span>' : '<span class="badge warn">Épuisé</span>')+
+        (p.available && j.phone ? '<div class="row" style="padding:0"><button class="g" style="width:100%" onclick="orderWa(\''+j.phone+'\',\''+encodeURIComponent(p.name)+'\')">Commander sur WhatsApp</button></div>' : '')+
+        '</div></div>').join("")+'</div>' : '<p class="muted">Aucun produit pour le moment.</p>');
+  }catch(e){ box.innerHTML = '<div class="card"><h2>Catalogue introuvable</h2><p class="muted">'+esc(e.message)+'</p></div>'; }
+}
+function orderWa(phone, name){ window.open("https://wa.me/"+phone+"?text="+encodeURIComponent("Bonjour, je veux commander : "+decodeURIComponent(name)), "_blank"); }
+
+/* ===== DEMARRAGE ===== */
+const pm = location.pathname.match(/\/catalogue\/([a-z0-9-]{3,40})/);
+if(pm){ loadPublic(pm[1]); } else {
+  showAuth("login");
+  (function(){
+    const s = DB.get("session", null), users = DB.get("users", {});
+    if(s && users[s]) startApp(s);
+  })();
+}
+</script>
+</body>
+</html>
