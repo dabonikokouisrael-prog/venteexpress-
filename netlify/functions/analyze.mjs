@@ -2,7 +2,7 @@ import { getStore } from "@netlify/blobs";
 const H = { "Content-Type": "application/json", "Cache-Control": "no-store" };
 const j = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: H });
 export default async (req) => {
-  const key = process.env.ANTHROPIC_API_KEY;
+  const key = (process.env.ANTHROPIC_API_KEY || "").trim();
   if (req.method === "GET") return key ? j({ ok: true, detail: "clé IA présente" }) : j({ error: "Clé ANTHROPIC_API_KEY absente dans Netlify" }, 503);
   if (req.method !== "POST") return j({ error: "Méthode non permise" }, 405);
   if (!key) return j({ error: "IA non configurée (clé manquante)" }, 503);
@@ -12,7 +12,7 @@ export default async (req) => {
   // Limites quotidiennes (protègent ta clé) : par visiteur ET globale. Si le compteur est indisponible, on refuse.
   try {
     const ip = req.headers.get("x-nf-client-connection-ip") || "anon";
-    const day = new Date().toISOString().slice(0, 10), store = getStore("ai-usage");
+    const day = new Date().toISOString().slice(0, 10), store = getStore({ name: "ai-usage", consistency: "strong" });
     const k = ip + "_" + day, g = "global_" + day;
     const n = Number(await store.get(k)) || 0, tot = Number(await store.get(g)) || 0;
     const max = Number(process.env.AI_DAILY_LIMIT) || 30, maxAll = Number(process.env.AI_GLOBAL_DAILY_LIMIT) || 300;
