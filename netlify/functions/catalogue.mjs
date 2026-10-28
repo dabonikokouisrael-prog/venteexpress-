@@ -9,7 +9,7 @@ async function sha(t) {
   return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
 }
 async function handle(req) {
-  const store = getStore("catalogues");
+  const store = getStore({ name: "catalogues", consistency: "strong" });
   if (req.method === "GET") {
     if (new URL(req.url).searchParams.get("ping")) {
       try { await store.get("__ping__"); return j({ ok: true, detail: "stockage OK" }); }
@@ -33,7 +33,7 @@ async function handle(req) {
       // Limite de créations par visiteur et par jour (anti-spam du stockage) : refuse si le compteur est indisponible
       try {
         const ip = req.headers.get("x-nf-client-connection-ip") || "anon";
-        const us = getStore("catalogue-usage"), uk = ip + "_" + new Date().toISOString().slice(0, 10);
+        const us = getStore({ name: "catalogue-usage", consistency: "strong" }), uk = ip + "_" + new Date().toISOString().slice(0, 10);
         const n = Number(await us.get(uk)) || 0;
         if (n >= NEW_PER_DAY) return j({ error: "Trop de nouveaux catalogues aujourd'hui, réessaie demain." }, 429);
         await us.set(uk, String(n + 1));
