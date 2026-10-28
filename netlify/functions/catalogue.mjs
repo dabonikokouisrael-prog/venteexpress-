@@ -46,7 +46,7 @@ async function handle(req) {
       updated: Date.now(),
       products: (Array.isArray(products) ? products : []).slice(0, 60).filter(p => p && typeof p === "object").map(p => ({
         id: String((p && p.id) || "").slice(0, 20), name: String(p.name || "").slice(0, 100),
-        desc: String(p.desc || "").slice(0, 600), price: Number(p.price) || 0,
+        desc: String(p.desc || "").slice(0, 1000), price: Number(p.price) || 0,
         cur: String(p.cur || "FCFA").slice(0, 5),
         photo: okPhoto(p.photo) ? p.photo : "",
         available: !!p.available
