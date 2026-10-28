@@ -48,7 +48,8 @@ button.d{background:#fee2e2;color:var(--red)}
 .qty{width:76px!important;padding:9px!important;text-align:center}
 .pg{color:var(--green)}.pr{color:var(--red)}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}.pc{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(17,24,39,.05)}.pc img{width:100%;height:200px;object-fit:cover;display:block}.pc div{padding:14px}.pc h3{margin:0 0 4px;font-size:16px}.pc .pp{font-size:18px;font-weight:800;color:var(--blue);margin:6px 0}</style>
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;align-items:start}.pc{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(17,24,39,.05)}.pc img{width:100%;height:auto;max-height:75vh;object-fit:contain;display:block;background:#f3f4f6;cursor:zoom-in}.pc div{padding:14px}.pc h3{margin:0 0 4px;font-size:17px}.pc .pp{font-size:19px;font-weight:800;color:var(--blue);margin:6px 0}
+.lb{position:fixed;top:0;left:0;right:0;bottom:0;z-index:50;background:rgba(0,0,0,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px}.lb img{max-width:100%;max-height:calc(100% - 70px);object-fit:contain;border-radius:8px}.lb p{color:#fff;margin:12px 0 0;font-size:15px;text-align:center}.lb button{position:absolute;top:10px;right:10px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;font-size:22px;padding:0}</style>
 </head>
 <body>
 
@@ -76,6 +77,7 @@ button.d{background:#fee2e2;color:var(--red)}
 </div>
 
 <div id="pubView" class="wrap hidden"></div>
+<div id="lb" class="lb hidden" role="dialog" aria-modal="true" aria-label="Photo en grand" onclick="closeLb()"><button type="button" aria-label="Fermer" onclick="closeLb()">✕</button><img id="lbImg" alt=""><p id="lbCap"></p></div>
 
 <!-- APPLICATION -->
 <div id="main" class="hidden">
@@ -111,6 +113,9 @@ button.d{background:#fee2e2;color:var(--red)}
             <input id="pPrice" type="number" placeholder="15000" style="flex:2" oninput="liveProfit()">
             <select id="pCur" style="flex:1"><option>FCFA</option><option>EUR</option><option>USD</option></select>
           </div>
+          <label>Détails que je connais (facultatif)</label>
+          <textarea id="pDetails" maxlength="300" style="min-height:64px" placeholder="Ex. autonomie 30 heures, Bluetooth 5.3, étanche IPX5"></textarea>
+          <div class="muted" style="margin-top:4px">L'IA lit la photo (marque, modèle) et ajoute ces détails à la description, sans rien inventer.</div>
           <div class="row" style="justify-content:space-between;align-items:center;margin:12px 0 5px"><b style="font-size:14px">Description (modifiable)</b><button class="p" type="button" onclick="aiDesc()">✨ Générer</button></div>
           <textarea id="pDesc" placeholder="Bluetooth&#10;Étanche&#10;Autonomie 5 jours"></textarea>
           <div class="two"><div><label>Prix d'achat (privé)</label><input id="pCost" type="number" placeholder="9000" oninput="liveProfit()"></div>
@@ -152,6 +157,7 @@ button.d{background:#fee2e2;color:var(--red)}
       <div class="card">
         <h2>📦 Mon catalogue</h2>
         <p class="muted">Tes annonces enregistrées. Réutilise-les en un clic.</p>
+        <div id="catMsg" class="msg"></div>
         <div id="catList"></div>
       </div>
     </div>
@@ -226,7 +232,7 @@ button.d{background:#fee2e2;color:var(--red)}
     <div id="tab-grp" class="tabpane hidden">
       <div class="card">
         <h2>👥 Publier dans mes groupes</h2>
-        <p class="muted">WhatsApp interdit l'envoi automatique. Avec la dernière annonce générée et une photo, le téléphone ouvre le partage : tu choisis WhatsApp puis le groupe. Sinon, le message est copié et tu le colles toi-même.</p>
+        <p class="muted">WhatsApp interdit l'envoi automatique dans un groupe précis. Choisis l'annonce (la dernière générée ou une annonce enregistrée) : avec sa photo, le téléphone ouvre le partage, tu choisis WhatsApp puis le groupe. Sans photo, le message est copié et tu le colles toi-même.</p>
         <label>Nom du groupe</label>
         <input id="gName" placeholder="Ex. Vendeurs Lomé">
         <label>Lien d'invitation (facultatif)</label>
@@ -313,6 +319,27 @@ async function copyText(t){
   }
 }
 function wa(text){ window.open("https://wa.me/?text="+encodeURIComponent(text), "_blank"); }
+/* Menu de partage du téléphone avec photo + texte. true = ouvert (ou annulé par l'utilisateur) ; false = impossible sur cet appareil. */
+async function shareFiles(f, text){
+  if(!f || !navigator.share || !navigator.canShare) return false;
+  try{
+    if(!navigator.canShare({files:[f]})) return false;
+    await navigator.share({files:[f], text:text});
+    return true;
+  }catch(e){ return !!(e && e.name === "AbortError"); }
+}
+/* Photo enregistrée (image en base64) -> vrai fichier à partager */
+function dataUrlFile(src, name){
+  const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+\/=]+)$/.exec(src || "");
+  if(!m) return null;
+  try{
+    const bin = atob(m[2]), u = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return new File([u], (slugify(name || "") || "produit")+"."+(m[1] === "image/png" ? "png" : m[1] === "image/webp" ? "webp" : "jpg"), {type:m[1]});
+  }catch(e){ return null; }
+}
+/* Photo ou vidéo choisie dans l'onglet Annonce : le fichier d'origine (pas la miniature) */
+function currentFile(){ return photoFile ? new File([photoFile], photoFile.name || "produit.jpg", {type: photoFile.type || "image/jpeg"}) : null; }
 
 /* ===== AUTHENTIFICATION LOCALE ===== */
 function showAuth(mode){
@@ -451,7 +478,7 @@ function readPhoto(f, cb){
   if(f.size > PHOTO_MAX){ cb("Photo trop lourde (max 25 Mo).", ""); return; }
   const r = new FileReader();
   r.onerror = () => cb("Impossible de lire la photo. Réessaie.", "");
-  r.onload = () => makeThumb(r.result, t => t ? cb("", t, r.result) : cb("Format de photo non pris en charge. Utilise une photo JPEG ou PNG (sur iPhone : Réglages > Appareil photo > Formats > Le plus compatible).", ""));
+  r.onload = () => makeThumb(r.result, t => t ? cb("", t, r.result) : cb("Format de photo non pris en charge. Utilise une photo JPEG ou PNG (sur iPhone : Réglages > Appareil photo > Formats > Le plus compatible).", ""), 600, 0.7, 80000);
   r.readAsDataURL(f);
 }
 let sPhotoData = "", editId = null;
@@ -466,16 +493,23 @@ el("sPhoto").addEventListener("change", function(e){
 });
 function saveContact(){ if(user) DB.set("contact_"+user.id, el("contact").value); }
 
+/* Une ligne de description qui commence déjà par un emoji (cas de l'IA) garde le sien ; sinon on ajoute la puce du modèle */
+const EMO = (function(){
+  try{ return new RegExp("^\\p{Extended_Pictographic}", "u"); }catch(e){}
+  try{ return new RegExp("^[\\u2300-\\u23FF\\u25A0-\\u27BF\\u2B00-\\u2BFF\\u{1F000}-\\u{1FAFF}]", "u"); }catch(e){}
+  return /^[\u2300-\u23FF\u25A0-\u27BF\u2B00-\u2BFF\uD83C-\uD83E]/;
+})();
+function bl(x, mark){ return EMO.test(x) ? x : mark+" "+x; }
 function buildAd(){
   const n = v("pName"), p = v("pPrice"), cur = el("pCur").value, st = el("pPlat").value==="insta" ? "insta" : el("pStyle").value, c = v("contact"), pl = el("pPlat").value;
   const d = v("pDesc").split("\n").map(x => x.trim()).filter(Boolean);
   if(!n || !p || !d.length) return "";
   const price = formatPrice(p, cur) .replace(/\u202f/g,"\u00a0"), ct = c ? "\n📲 "+c : "";
-  if(st === "insta") return "✨ "+n+" ✨\n\n"+d.map(x => "▪️ "+x).join("\n")+"\n\n💰 "+price+"\n🚚 Livraison disponible\n📩 Commande en message privé"+ct+"\n\n"+tags(n);
+  if(st === "insta") return "✨ "+n+" ✨\n\n"+d.map(x => bl(x, "▪️")).join("\n")+"\n\n💰 "+price+"\n🚚 Livraison disponible\n📩 Commande en message privé"+ct+"\n\n"+tags(n);
   if(st === "short") return "🔥 "+n+" — "+price+"\n"+d.join(" • ")+"\n📩 Écrivez-nous pour commander !"+ct;
-  if(st === "classic") return n+"\n\nPrix : "+price+"\n\n"+d.map(x => "• "+x).join("\n")+"\n\nLivraison disponible.\nContactez-nous pour commander."+ct;
-  if(pl === "fb") return "🔥 "+n+" 🔥\n\n"+d.map(x => "✅ "+x).join("\n")+"\n\n💰 Prix : "+price+"\n🚚 Livraison disponible\n\n👉 Commentez ou envoyez-nous un message privé pour commander !"+ct;
-  return "🔥 NOUVEAUTÉ — *"+n.toUpperCase()+"* 🔥\n\n"+d.map(x => "✅ "+x).join("\n")+"\n\n💰 Prix : "+price+"\n🚚 Livraison disponible\n\n📩 Intéressé(e) ? Écrivez-nous maintenant pour commander !"+ct;
+  if(st === "classic") return n+"\n\nPrix : "+price+"\n\n"+d.map(x => bl(x, "•")).join("\n")+"\n\nLivraison disponible.\nContactez-nous pour commander."+ct;
+  if(pl === "fb") return "🔥 "+n+" 🔥\n\n"+d.map(x => bl(x, "✅")).join("\n")+"\n\n💰 Prix : "+price+"\n🚚 Livraison disponible\n\n👉 Commentez ou envoyez-nous un message privé pour commander !"+ct;
+  return "🔥 NOUVEAUTÉ — *"+n.toUpperCase()+"* 🔥\n\n"+d.map(x => bl(x, "✅")).join("\n")+"\n\n💰 Prix : "+price+"\n🚚 Livraison disponible\n\n📩 Intéressé(e) ? Écrivez-nous maintenant pour commander !"+ct;
 }
 function generate(){
   if(!guard()) return;
@@ -491,16 +525,10 @@ async function copyAd(){
 }
 async function shareAd(){
   if(!lastAd){ say("adMsg","Génère d'abord une annonce.",false); return; }
-  if(photoFile && navigator.canShare){
-    try{
-      const f = new File([photoFile], photoFile.name || "produit.jpg", {type: photoFile.type || "image/jpeg"});
-      if(navigator.canShare({files:[f]})){
-        await navigator.share({files:[f], text:lastAd});
-        return;
-      }
-    }catch(e){ if(e && e.name === "AbortError") return; }
+  if(photoFile){
+    if(await shareFiles(currentFile(), lastAd)) return;
+    say("adMsg","Ce navigateur ne peut pas envoyer la photo avec le texte. Le texte part sur WhatsApp : ajoute la photo à la main avec le trombone.",false);
   }
-  if(photoFile) say("adMsg","Ce navigateur ne peut pas envoyer la photo avec le texte. Le texte part sur WhatsApp : ajoute la photo à la main avec le trombone.",false);
   wa(lastAd);
 }
 function downloadAd(){
@@ -531,7 +559,16 @@ function renderCatalog(){
 }
 function textById(list, id){ const x = data()[list].find(i => i.id === id); return x ? x.text : ""; }
 async function copyById(list, id){ await copyText(textById(list, id)); }
-function shareById(list, id){ wa(textById(list, id)); }
+async function shareById(list, id){
+  const x = data()[list].find(i => i.id === id); if(!x) return;
+  /* Annonce enregistrée avec photo : on envoie la photo ET le texte par le partage du téléphone */
+  const f = list === "catalog" ? dataUrlFile(x.photo, x.name) : null;
+  if(f){
+    if(await shareFiles(f, x.text)) return;
+    say("catMsg","Ce navigateur ne peut pas envoyer la photo avec le texte. Le texte part sur WhatsApp : ajoute la photo à la main avec le trombone.",false);
+  }
+  wa(x.text);
+}
 
 /* ===== REPONSES RAPIDES ===== */
 function defaultReplies(){
@@ -582,21 +619,18 @@ function renderGroups(){
 }
 async function postGroup(id){
   const sel = el("gAd").value, d = data();
-  const text = sel === "last" ? lastAd : textById("catalog", sel);
+  const x = sel === "last" ? null : d.catalog.find(c => c.id === sel);
+  const text = sel === "last" ? lastAd : (x ? x.text : "");
   if(!text){ say("grpMsg","Génère ou choisis d'abord une annonce.",false); return; }
-  const g = d.groups.find(x => x.id === id);
-  if(sel === "last" && photoFile && navigator.canShare){
-    try{
-      const f = new File([photoFile], photoFile.name || "produit.jpg", {type: photoFile.type || "image/jpeg"});
-      if(navigator.canShare({files:[f]})){
-        say("grpMsg","Choisis WhatsApp, puis le groupe « "+g.name+" ».");
-        await navigator.share({files:[f], text:text});
-        return;
-      }
-    }catch(e){ if(e && e.name === "AbortError") return; }
+  const g = d.groups.find(y => y.id === id); if(!g) return;
+  /* Photo + texte par le partage du téléphone (WhatsApp ne permet pas de viser un groupe depuis un site : tu le choisis dans la liste) */
+  const f = sel === "last" ? currentFile() : dataUrlFile(x.photo, x.name);
+  if(f){
+    say("grpMsg","Choisis WhatsApp, puis le groupe « "+g.name+" ».");
+    if(await shareFiles(f, text)) return;
   }
   await copyText(text);
-  say("grpMsg","Message copié (sans photo). Colle-le dans le groupe « "+g.name+" » et ajoute la photo avec le +.");
+  say("grpMsg","Message copié"+(f ? " (sans photo : ce navigateur ne peut pas l'envoyer avec le texte)" : " (sans photo)")+". Colle-le dans le groupe « "+g.name+" »"+(f ? " et ajoute la photo avec le +." : "."));
   if(g.link) window.open(g.link, "_blank");
 }
 
@@ -607,29 +641,49 @@ function tags(n){
 }
 async function shareAny(){
   if(!lastAd){ say("adMsg","Génère d'abord une annonce.",false); return; }
+  /* Instagram et Facebook ignorent le texte envoyé avec une photo : on le copie TOUJOURS avant d'ouvrir le partage, pour le coller dans la publication. */
+  const copying = copyText(lastAd); /* lancée tout de suite, sans attendre, pour garder le geste de l'utilisateur */
+  say("adMsg","✅ Texte copié, colle-le dans ta publication.");
+  copying.then(ok => { if(!ok) say("adMsg","Copie impossible : sélectionne le texte dans l'aperçu et copie-le à la main.",false); });
   if(navigator.share){
     try{
-      const o = { text:lastAd };
-      if(photoFile){
-        const f = new File([photoFile], photoFile.name || "produit.jpg", {type: photoFile.type || "image/jpeg"});
-        if(navigator.canShare && navigator.canShare({files:[f]})) o.files = [f];
-      }
+      const o = { text:lastAd }, f = currentFile();
+      if(f && navigator.canShare && navigator.canShare({files:[f]})) o.files = [f];
       await navigator.share(o); return;
     }catch(e){ if(e && e.name === "AbortError") return; }
   }
-  await copyText(lastAd);
-  say("adMsg","Texte copié. Ouvre Instagram ou Facebook, colle-le et ajoute ta photo.");
+  if(await copying) say("adMsg","Texte copié. Ouvre Instagram ou Facebook, colle-le et ajoute ta photo.");
 }
-function makeThumb(src, cb){
+/* Redessine une image (ou une vidéo) en JPEG : côté max px, qualité q ; si cap est donné, réduit jusqu'à tenir sous cap caractères
+   (d'abord la qualité, jusqu'à 0.5, puis la taille). Fond blanc pour les PNG transparents. */
+function toJpeg(img, w0, h0, px, q, cap){
+  let out = "";
+  for(let n = 0; n < 10; n++){
+    const k = Math.min(1, px/Math.max(w0, h0)), c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(w0*k)); c.height = Math.max(1, Math.round(h0*k));
+    const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+    out = c.toDataURL("image/jpeg", q);
+    if(!cap || out.length <= cap) break;
+    if(q > 0.51) q = Math.max(0.5, q-0.05); else px = Math.round(px*0.88);
+  }
+  return out;
+}
+function makeThumb(src, cb, px, q, cap){
   const i = new Image();
-  i.onload = () => {
-    const k = Math.min(1, 480/Math.max(i.width, i.height)), c = document.createElement("canvas");
-    c.width = Math.round(i.width*k); c.height = Math.round(i.height*k);
-    c.getContext("2d").drawImage(i, 0, 0, c.width, c.height);
-    cb(c.toDataURL("image/jpeg", 0.7));
-  };
+  i.onload = () => cb(toJpeg(i, i.width, i.height, px || 600, q || 0.72, cap));
   i.onerror = () => cb("");
   i.src = src;
+}
+/* Image plus grande envoyée à l'IA (elle lit mieux la marque et le modèle) */
+function bigImage(){
+  return new Promise(res => {
+    if(photoFile && photoFile.type && photoFile.type.indexOf("image/") === 0 && photoFile.size <= PHOTO_MAX){
+      const r = new FileReader();
+      r.onload = () => makeThumb(r.result, t => res(t || photoThumb), 1024, 0.8);
+      r.onerror = () => res(photoThumb);
+      r.readAsDataURL(photoFile);
+    } else res(photoThumb);
+  });
 }
 
 /* ===== STOCK, PRIX, BENEFICE ===== */
@@ -741,28 +795,31 @@ function videoPoster(f){
   vd.src = URL.createObjectURL(f);
   vd.onloadeddata = () => { vd.currentTime = Math.min(1, (vd.duration||1)/2); };
   vd.onseeked = () => {
-    const c = document.createElement("canvas"), k = Math.min(1, 640/Math.max(vd.videoWidth, vd.videoHeight));
-    c.width = Math.round(vd.videoWidth*k); c.height = Math.round(vd.videoHeight*k);
-    c.getContext("2d").drawImage(vd, 0, 0, c.width, c.height);
-    photoData = photoThumb = c.toDataURL("image/jpeg", 0.7); URL.revokeObjectURL(vd.src);
+    photoData = photoThumb = toJpeg(vd, vd.videoWidth, vd.videoHeight, 600, 0.7, 80000); URL.revokeObjectURL(vd.src);
     say("genMsg","Vidéo reçue : une image de couverture a été extraite.");
   };
   vd.onerror = () => say("genMsg","Vidéo illisible, essaie une photo.",false);
 }
 async function aiDesc(){
-  const n = v("pName");
+  const n = v("pName"), det = v("pDetails");
+  let why = "";
   if(CONFIG.aiEndpoint && photoThumb){
     try{
       say("genMsg","Analyse du média en cours…");
-      const r = await fetch(CONFIG.aiEndpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({image:photoThumb,name:n})});
+      const img = await bigImage();
+      const r = await fetch(CONFIG.aiEndpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({image:img,name:n,details:det})});
       const j = await r.json(); if(!r.ok) throw new Error(j.error||"erreur");
+      const lines = [j.hook].concat(j.features||[]).filter(Boolean);
+      if(!lines.length) throw new Error("réponse vide");
       if(j.name && !n) el("pName").value = j.name;
-      el("pDesc").value = (j.features||[]).join("\n"); say("genMsg","Description générée : modifie-la si besoin."); return;
-    }catch(e){ say("genMsg","IA indisponible ("+e.message+"). Modèle simple utilisé.",false); }
+      el("pDesc").value = lines.join("\n"); say("genMsg","Description générée : modifie-la si besoin."); return;
+    }catch(e){ why = "IA indisponible ("+e.message+"). "; }
   }
-  if(!n){ say("genMsg","Entre d'abord le nom du produit.",false); return; }
-  el("pDesc").value = "Produit neuf, de qualité\nIdéal pour vous ou en cadeau\nDisponible immédiatement\nLivraison rapide possible";
-  say("genMsg","Modèle de description créé (sans IA) : adapte-le à ton produit.");
+  if(!n){ say("genMsg", why+"Entre d'abord le nom du produit.", false); return; }
+  /* Sans IA : on reprend les détails du vendeur s'il y en a (virgule suivie d'un espace, point-virgule ou retour à la ligne), sinon un modèle simple */
+  const own = det.split(/[\n;]+|,\s+/).map(x => x.trim()).filter(Boolean).map(x => x.charAt(0).toUpperCase()+x.slice(1)).slice(0,6);
+  el("pDesc").value = own.length ? own.join("\n") : "Produit neuf, de qualité\nIdéal pour vous ou en cadeau\nDisponible immédiatement\nLivraison rapide possible";
+  say("genMsg", why+(own.length ? "Description créée avec tes détails : complète-la." : "Modèle de description créé (sans IA) : adapte-le à ton produit."), !why);
 }
 function liveProfit(){
   const p = Number(v("pPrice")), c = Number(v("pCost")), cur = el("pCur").value;
@@ -784,22 +841,12 @@ function renderPub(){
 }
 const PHOTO_OK = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/;
 function shrinkPhoto(src){
+  /* Photos du catalogue public : jusqu'à ~600 px, 80 000 caractères au plus chacune (le serveur refuse au-delà de 90 000) */
   return new Promise(res => {
     if(!PHOTO_OK.test(src||"")) return res("");
-    if(src.length < 60000) return res(src);
+    if(src.length <= 80000) return res(src);
     const i = new Image();
-    i.onload = () => {
-      let px = 360, q = 0.6, out = "";
-      for(let n = 0; n < 5; n++){
-        const k = Math.min(1, px/Math.max(i.width, i.height)), c = document.createElement("canvas");
-        c.width = Math.max(1, Math.round(i.width*k)); c.height = Math.max(1, Math.round(i.height*k));
-        c.getContext("2d").drawImage(i, 0, 0, c.width, c.height);
-        out = c.toDataURL("image/jpeg", q);
-        if(out.length < 60000) return res(out);
-        px = Math.round(px*0.8); q = Math.max(0.4, q-0.05);
-      }
-      res(out.length < 85000 ? out : "");
-    };
+    i.onload = () => { const out = toJpeg(i, i.width, i.height, 600, 0.7, 80000); res(out.length <= 88000 ? out : ""); };
     i.onerror = () => res("");
     i.src = src;
   });
@@ -857,15 +904,33 @@ async function loadPublic(slug){
     const r = await fetch("/api/catalogue?slug="+slug), j = await r.json();
     if(!r.ok) throw new Error(j.error || "Catalogue introuvable");
     document.title = j.shop+" — Catalogue";
-    box.innerHTML = '<h1 class="logo" style="margin:8px 0 16px">'+esc(j.shop)+'</h1>' +
-      (j.products.length ? '<div class="pgrid">'+j.products.map(p =>
-        '<div class="pc">'+(PHOTO_OK.test(p.photo||"") ? '<img src="'+esc(p.photo)+'" alt="'+esc(p.name)+'">' : '')+'<div><h3>'+esc(p.name)+'</h3>'+
+    pubList = j.products;
+    box.innerHTML = '<h1 class="logo" style="margin:8px 0 6px">'+esc(j.shop)+'</h1>' +
+      (j.products.some(p => PHOTO_OK.test(p.photo||"")) ? '<p class="muted" style="margin:0 0 14px">Appuie sur une photo pour l\'agrandir.</p>' : '<div style="height:10px"></div>') +
+      (j.products.length ? '<div class="pgrid">'+j.products.map((p, i) =>
+        '<div class="pc">'+(PHOTO_OK.test(p.photo||"") ? '<img src="'+esc(p.photo)+'" alt="'+esc(p.name)+'" decoding="async" onclick="openLb('+i+')">' : '')+'<div><h3>'+esc(p.name)+'</h3>'+
         '<span class="muted">'+esc(p.desc).replace(/\n/g,"<br>")+'</span><div class="pp" style="padding:0">'+esc(money(p.price,p.cur).replace(/\u202f/g,"\u00a0"))+'</div>'+
         (p.available ? '<span class="badge ok">Disponible</span>' : '<span class="badge warn">Épuisé</span>')+
         (p.available && j.phone ? '<div class="row" style="padding:0"><button class="g" style="width:100%" onclick="orderWa(\''+j.phone+'\',\''+encodeURIComponent(p.name)+'\')">Commander sur WhatsApp</button></div>' : '')+
         '</div></div>').join("")+'</div>' : '<p class="muted">Aucun produit pour le moment.</p>');
   }catch(e){ box.innerHTML = '<div class="card"><h2>Catalogue introuvable</h2><p class="muted">'+esc(e.message)+'</p></div>'; }
 }
+let pubList = [];
+function openLb(i){
+  const p = pubList[i]; if(!p || !PHOTO_OK.test(p.photo||"")) return;
+  el("lbImg").src = p.photo; el("lbImg").alt = p.name;
+  el("lbCap").textContent = p.name+" — "+money(p.price, p.cur).replace(/\u202f/g,"\u00a0");
+  el("lb").classList.remove("hidden");
+  try{ history.pushState({lb:1}, ""); }catch(e){}
+}
+function hideLb(){ el("lb").classList.add("hidden"); el("lbImg").removeAttribute("src"); }
+function closeLb(){
+  if(el("lb").classList.contains("hidden")) return;
+  hideLb();
+  try{ if(history.state && history.state.lb) history.back(); }catch(e){}
+}
+window.addEventListener("popstate", () => { if(!el("lb").classList.contains("hidden")) hideLb(); });
+document.addEventListener("keydown", e => { if(e.key === "Escape") closeLb(); });
 function orderWa(phone, name){ window.open("https://wa.me/"+phone+"?text="+encodeURIComponent("Bonjour, je veux commander : "+decodeURIComponent(name)), "_blank"); }
 
 /* ===== DEMARRAGE ===== */
