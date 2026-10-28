@@ -56,10 +56,12 @@ CATALOGUE PUBLIC (V2.2)
 - Mise à jour automatique quand le vendeur modifie un produit ou un prix.
 - DEPLOIEMENT : Netlify relié à GitHub (ou « netlify deploy --prod » après « npm install »).
   Le simple glisser-déposer ne suffit pas : il faut les fonctions (dossier netlify/) et package.json.
-- Max 60 produits publiés ; les photos sont réduites automatiquement avant l'envoi (une photo trop lourde est ignorée, un message l'indique) ; les vidéos ne sont pas dans le catalogue (image de couverture seulement).
+- Max 60 produits publiés ; les photos sont réduites automatiquement (~600 px) avant l'envoi et s'affichent en grand, avec ouverture plein écran au toucher (une photo trop lourde est ignorée, un message l'indique) ; les vidéos ne sont pas dans le catalogue (image de couverture seulement).
 
 ANALYSE IA (V2.3)
-- Bouton « ✨ Générer » : l'IA regarde la photo (ou l'image de la vidéo) et propose nom + points forts, modifiables.
+- Bouton « ✨ Générer » : l'IA regarde la photo (ou l'image de la vidéo), lit la marque et le modèle s'ils sont visibles,
+  intègre le champ « Détails que je connais » (ex. autonomie 30 heures, Bluetooth 5.3) et propose une accroche + 4 à 6 points forts
+  avec emojis, modifiables. Elle n'invente ni chiffre, ni prix, et n'ajoute aucun appel à l'achat ni promesse de livraison.
 - Dans Netlify > Site settings > Environment variables, ajoute ANTHROPIC_API_KEY (ta clé Anthropic).
   Facultatif : ANTHROPIC_MODEL (défaut claude-haiku-5-5), AI_DAILY_LIMIT (défaut 30 analyses par visiteur et par jour),
   AI_GLOBAL_DAILY_LIMIT (défaut 300 analyses par jour au total), CATALOGUE_NEW_PER_DAY (défaut 5 nouveaux catalogues par visiteur et par jour).
