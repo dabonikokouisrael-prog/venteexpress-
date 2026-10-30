@@ -6,3 +6,25 @@
   from = "/catalogue/*"
   to = "/index.html"
   status = 200
+
+[[redirects]]
+  from = "/facture/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/facture/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Referrer-Policy = "no-referrer"
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"

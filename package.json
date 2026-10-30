@@ -1,1 +1,1 @@
-{ "name": "venteexpress", "version": "2.5.0", "private": true, "dependencies": { "@netlify/blobs": "^8.1.0" } }
+{ "name": "venteexpress", "version": "3.2.0", "private": true, "dependencies": { "@netlify/blobs": "^8.1.0" } }

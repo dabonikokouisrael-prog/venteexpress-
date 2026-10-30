@@ -1,3 +1,39 @@
+V3.1 (LOT A) - NOUVEAUTES
+- Nouvelle présentation : en-tête bleu marine, barre du bas sur téléphone (Accueil, Catalogue, +, Commandes, Plus), menu à gauche sur ordinateur. Tout est en français ET en anglais (boutons FR | EN).
+- Tableau de bord : ventes du jour, bénéfice du jour, stock total, nouveaux clients, alertes (commandes à traiter, stock faible), courbe des ventes ou du bénéfice sur 7 / 30 jours, dernières ventes.
+- Assistant « Ajouter un produit » en 3 étapes (Produit, Annonce, Aperçu) : jusqu'à 4 photos, vidéo de 30 s au plus (l'appli garde l'image de couverture, pas la vidéo), description par l'IA, annonce WhatsApp / Facebook / Instagram en 3 styles, copie, partage photo + texte, téléchargement.
+- Catalogue : grille avec recherche, catégories, filtres « stock faible » et « masqués », 24 produits à la fois.
+- Commandes : statuts Nouvelle, En attente, Confirmée, Payée, Annulée, Expirée ; expiration automatique (24 h, réglable) qui libère le stock réservé ; livraison (À préparer, Prêt, En cours de livraison, Livré) ; message WhatsApp au client à chaque étape.
+- Paiements : Mixx by Yas, Moov Money, virement, espèces. Le vendeur confirme lui-même la réception de l'argent : une commande n'est jamais marquée « payée » toute seule. Historique des paiements et des remboursements.
+- Ventes : annulation et remboursement (total ou partiel) avec trace ; une vente n'est jamais effacée. Factures WhatsApp. Export CSV sans prix d'achat ni bénéfice.
+- Factures : vrai PDF A4 (logo, nom et coordonnées de la boutique, numéro, date, client et son WhatsApp, lignes quantité / prix, total, moyen de paiement, statut Payée / À payer ; plusieurs pages si la facture est longue). Boutons : Télécharger en PDF, Imprimer, Partager sur WhatsApp (message avec lien sécurisé, ou texte si la boutique en ligne n'est pas activée), Envoyer le PDF (menu de partage du téléphone), Copier le lien. Le numéro WhatsApp du client est repris de ses fiches. Le lien /facture/... ouvre une page sans compte (PDF, impression, contact WhatsApp), peut être désactivé, et expire après 365 jours.
+- Paiements : cartes modernes Mixx by Yas, Moov Money, Banque, Espèces (Paramètres et panier du client), état « choisi » bien visible. Les logos officiels Mixx / Moov ne sont pas inclus : à ajouter plus tard dans parts/logos/ (mixx.png, moov.png, bank.png, cash.png) si le vendeur a le droit de les utiliser.
+- Stock : réapprovisionner, corriger, mouvements, alerte « stock faible ». Bénéfices : par produit et global, remboursements et dépenses déduits.
+- Clients : fiches créées automatiquement. Paramètres : logo et description de la boutique, modes de paiement, règles, sauvegardes automatiques (7 jours) et manuelles, corbeille (30 jours), journal des actions.
+- Catalogue public : logo, nom, description, catégories, recherche, panier, choix du mode de paiement, bouton WhatsApp, français / anglais. 60 produits visibles au maximum (un message le dit au vendeur).
+- Hors ligne : l'appli s'ouvre sans réseau ; ventes, commandes et produits peuvent être saisis ; le catalogue et les commandes se mettent à jour au retour du réseau.
+FICHIERS A METTRE SUR GITHUB : index.html, sw.js, manifest.webmanifest, netlify.toml, package.json, netlify/functions/ (analyze.mjs, catalogue.mjs, orders.mjs, icons.mjs, invoice.mjs).
+VARIABLES NETLIFY : ANTHROPIC_API_KEY (déjà en place). Rien d'autre à ajouter. Facultatif : INVOICES_PER_IP_HOUR (défaut 60), INVOICES_PER_SHOP_DAY (défaut 300), INVOICE_TTL_DAYS (défaut 365).
+
+LIMITES V3.1 (dites honnêtement)
+- Comptes employés et rôles : PAS activés (page d'information). Ils demandent des comptes vérifiés par un serveur (Supabase, étape suivante).
+- Les données restent dans le navigateur du vendeur : pas de synchronisation entre plusieurs appareils. Capacité : environ 9 000 ventes avant que la mémoire du navigateur (~5 Mo) soit pleine ; l'appli prévient clairement si cela arrive.
+- Une commande reçue pendant que l'appli est fermée réserve le stock seulement à la prochaine ouverture ; deux clients peuvent commander la dernière pièce avant la mise à jour (le vendeur le voit à la confirmation, le paiement revérifie le stock).
+- La vidéo du produit n'est pas enregistrée (image de couverture seulement). Pas de notifications WhatsApp automatiques : le vendeur envoie le message en un clic.
+- Le code d'activation de l'abonnement reste lisible dans le fichier (suffisant pour démarrer) : un vrai paiement automatique demandera un serveur.
+- Factures : le lien sécurisé demande que la boutique en ligne soit activée (100 lignes au maximum par lien ; au-delà, envoyer le PDF). « Envoyer le PDF » utilise le menu de partage du téléphone (WhatsApp, Mail, Fichiers) : l'appli n'envoie rien toute seule. Sur iPhone / iPad, « Télécharger en PDF » passe par ce même menu (« Enregistrer dans Fichiers »). Sur la page client de la facture, les titres et boutons suivent la langue choisie (FR / EN), mais les consignes de paiement (« Mixx by Yas : numéro… », « Virement : … ») restent écrites dans la langue du vendeur au moment où le lien est créé.
+
+V3.0 — NOUVEAUTES
+- Français / English : boutons FR | EN en haut. Le choix est retenu. L'IA, les annonces générées, les messages du serveur et le catalogue public suivent la langue. Le vendeur choisit la langue de son catalogue (onglet Catalogue public) ; le client peut la changer lui-même.
+- Onglet « Ma boutique » : logo rond (ou initiale), courte description, numéro Mobile Money (affichés dans le catalogue public et sur les factures), installation sur l'écran d'accueil, sauvegarde / restauration (fichier .json).
+- Stock : pastille verte (assez), orange (faible, seuil CONFIG.lowStock), rouge (rupture) ; résumé du jour ; graphique des 7 derniers jours (ventes ou bénéfice, avec « Voir en tableau »).
+- Ventes : bouton « Vendre », « Annuler » (le stock revient), statut « À confirmer » / confirmée (les ventes à confirmer ne comptent pas dans le chiffre d'affaires), export CSV (sans prix d'achat ni bénéfice).
+- Factures WhatsApp : coche les ventes, appuie sur « Facture » (numéro, client, total, numéro Mobile Money).
+- Groupes : deux boutons par groupe (« Photo + texte » et « Copier + ouvrir le groupe »), le message s'affiche sous le groupe.
+- Catalogue public : en-tête avec logo, nom et description ; quantité à choisir ; message de commande complet (produit, quantité, total, nom, quartier).
+- Hors ligne (léger) : l'appli s'ouvre sans réseau (stock, ventes, prix, factures). L'IA et la mise à jour du catalogue reprennent avec le réseau.
+FICHIERS A AJOUTER SUR GITHUB (en plus des anciens) : sw.js et manifest.webmanifest (à la racine), et netlify/functions/icons.mjs. netlify.toml et package.json sont mis à jour.
+
 V2.5 — SI LE CATALOGUE AFFICHE « Erreur de publication »
 1. Dans l'app, onglet Catalogue public, appuie sur « Tester le serveur ».
 2. Si tu vois « introuvable (erreur 404) » : le dossier netlify/functions n'a pas été envoyé sur GitHub.
