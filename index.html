@@ -17,7 +17,8 @@
   --navy:#0a2463;--navy2:#123584;--blue:#1d6bf3;--blue-d:#1757c8;--blue-l:#e9f1ff;
   --ink:#0f1f3d;--muted:#64748f;--line:#e3e9f4;--bg:#f2f5fb;--card:#fff;
   --green:#16a34a;--green-l:#e5f7ec;--orange:#e8890c;--orange-l:#fff1dd;--purple:#6d4fe0;--purple-l:#eee9ff;--red:#dc2626;--red-l:#fde9e9;--yellow-l:#fef3c7;
-  --r:16px;--sh:0 1px 2px rgba(15,31,61,.04),0 6px 20px rgba(15,31,61,.06);--hh:58px;--bn:66px
+  --r:16px;--sh:0 1px 2px rgba(15,31,61,.04),0 6px 20px rgba(15,31,61,.06);--hh:58px;--bn:66px;
+  --nlb:0px /* place réservée au badge « Powered by Netlify » (bas droite, fixe) : 0 s'il n'existe pas ; mesurée par j02_badge.js */
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -46,7 +47,9 @@ svg.i.s{width:16px;height:16px}svg.i.l{width:24px;height:24px}
 .side{display:none}
 .content{flex:1;min-width:0;padding:0 0 calc(var(--bn) + 28px)}
 .page{padding:14px 14px 0;max-width:980px;margin:0 auto}
-.bnav{position:fixed;left:0;right:0;bottom:0;z-index:25;height:calc(var(--bn) + env(safe-area-inset-bottom,0px));background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);align-items:stretch;padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -6px 20px rgba(15,31,61,.06)}
+.bnav{position:fixed;left:0;right:0;bottom:0;z-index:25;height:calc(var(--bn) + var(--nlb) + env(safe-area-inset-bottom,0px));background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);align-items:stretch;padding-bottom:calc(var(--nlb) + env(safe-area-inset-bottom,0px));box-shadow:0 -6px 20px rgba(15,31,61,.06)}
+/* Badge Netlify : le bas de la page se prolonge de sa hauteur, pour que le dernier contenu puisse toujours remonter au-dessus de lui */
+body::after{content:"";display:block;height:var(--nlb)}
 .bnav button{background:none;border-radius:0;color:#8a97ad;font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 0;position:relative;min-width:0}
 .bnav button.active{color:var(--blue)}
 .bnav button .bdg{position:absolute;top:4px;left:calc(50% + 6px);min-width:17px;height:17px;border-radius:9px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px}
@@ -59,7 +62,7 @@ svg.i.s{width:16px;height:16px}svg.i.l{width:24px;height:24px}
 .side .nv.active{background:var(--blue-l);color:var(--blue)}
 .side .nv .bdg{margin-left:auto;background:#ef4444;color:#fff;font-size:11px;font-weight:800;border-radius:9px;min-width:20px;text-align:center;padding:1px 6px}
 .sheet2{position:fixed;inset:0;z-index:40;background:rgba(10,36,99,.5);display:flex;align-items:flex-end;justify-content:center}
-.sheet2 .pn{background:#fff;width:100%;max-width:560px;border-radius:22px 22px 0 0;padding:14px 14px calc(18px + env(safe-area-inset-bottom,0px));max-height:86vh;overflow:auto;animation:up .22s ease}
+.sheet2 .pn{background:#fff;width:100%;max-width:560px;border-radius:22px 22px 0 0;padding:14px 14px calc(18px + var(--nlb) + env(safe-area-inset-bottom,0px));max-height:86vh;overflow:auto;animation:up .22s ease}
 @keyframes up{from{transform:translateY(30px);opacity:.4}to{transform:none;opacity:1}}
 .sheet2 .pn h3{font-size:16px;margin:2px 4px 10px}
 .sheet2 .grab{width:40px;height:4px;border-radius:2px;background:#d5dcea;margin:0 auto 10px}
@@ -140,9 +143,9 @@ button.ln{background:none;color:var(--blue);padding:4px 2px;font-weight:700}
 .sbox{position:relative}
 .sbox svg.i{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#8795ad;pointer-events:none}
 .sbox input{padding-left:40px}
-.sheet{position:fixed;inset:0;z-index:45;background:rgba(10,36,99,.5);overflow:auto;padding:12px}
+.sheet{position:fixed;inset:0;z-index:45;background:rgba(10,36,99,.5);overflow:auto;padding:12px 12px calc(12px + var(--nlb))}
 .sheet>.card{max-width:540px;margin:16px auto}
-.toast{pointer-events:none;position:fixed;left:50%;bottom:calc(var(--bn) + 22px);transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:14px;font-size:14px;font-weight:600;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:92vw;text-align:center;animation:in .2s ease}
+.toast{pointer-events:none;position:fixed;left:50%;bottom:calc(var(--bn) + var(--nlb) + 22px);transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:14px;font-size:14px;font-weight:600;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:92vw;text-align:center;animation:in .2s ease}
 @media(min-width:960px){.toast{bottom:28px}}
 .item{border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:10px;background:#fcfdff}
 .item b{display:block;margin-bottom:4px}
@@ -322,7 +325,7 @@ button.ln{background:none;color:var(--blue);padding:4px 2px;font-weight:700}
 .qs{display:inline-flex;align-items:center;gap:4px}
 .qs button{padding:8px 12px}
 .qs input{width:56px!important;padding:8px!important;text-align:center}
-.cartbar{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(242,245,251,0),var(--bg) 30%)}
+.cartbar{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:10px 14px calc(10px + var(--nlb) + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(242,245,251,0),var(--bg) 30%)}
 .cartbar button{width:100%;max-width:560px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--blue);color:#fff;padding:14px 18px;border-radius:16px;font-size:15px;box-shadow:0 10px 26px rgba(29,107,243,.4)}
 .gal{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;border-radius:14px}
 .gal img{width:100%;flex:none;scroll-snap-align:center;aspect-ratio:1/1;object-fit:cover;border-radius:14px;background:#eef2f9}
@@ -752,6 +755,35 @@ button.ln{background:none;color:var(--blue);padding:4px 2px;font-weight:700}
 <script>
 /* ===== LOGOS DES MOYENS DE PAIEMENT (fournis par la boutique ; vide par défaut) ===== */
 const PAY_LOGOS = {};
+
+/* ===== BADGE « POWERED BY NETLIFY » =====
+   Sur l'offre gratuite, Netlify ajoute en bas à droite un petit cadre fixe (iframe #nl-badge-frame, 196 x 63 px, au-dessus de tout).
+   On n'y touche pas : l'appli réserve simplement sa place. La variable CSS --nlb (0 par défaut) prend la hauteur du badge replié ;
+   la barre du bas, le bouton « Voir mon panier », les fenêtres et le bas des pages montent alors au-dessus de lui.
+   Quand on clique sur le badge il s'agrandit (carte de Netlify) : on garde la plus petite hauteur vue pour que l'appli ne bouge pas. */
+(function () {
+  var root = document.documentElement, base = 0, shown = "";
+  function apply() {
+    var f = document.getElementById("nl-badge-frame"), v = "";
+    if (f) {
+      var cs = getComputedStyle(f);
+      if (cs.display !== "none" && cs.visibility !== "hidden") {
+        var h = Math.ceil(f.getBoundingClientRect().height);
+        if (h >= 30 && h <= 140) base = base ? Math.min(base, h) : h;
+        v = (base || 64) + "px";
+      }
+    }
+    if (v !== shown) {
+      shown = v;
+      if (v) root.style.setProperty("--nlb", v); else root.style.removeProperty("--nlb");
+    }
+  }
+  apply();
+  try { new MutationObserver(apply).observe(document.body, { childList: true }); } catch (e) {}
+  window.addEventListener("resize", apply);
+  window.addEventListener("orientationchange", apply);
+  [500, 1500, 4000, 10000].forEach(function (t) { setTimeout(apply, t); });
+})();
 
 /* ===== CONFIGURATION ===== */
 const CONFIG = {
