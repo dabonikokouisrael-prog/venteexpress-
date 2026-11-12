@@ -1,9 +1,9 @@
-// Filet de sécurité : toutes les 10 minutes, envoie ce qui est resté en attente (réessais après une erreur passagère, messages créés hors ligne…).
+// Filet de sécurité : toutes les 15 minutes (2 880 passages par mois au lieu de 4 320), envoie ce qui est resté en attente (réessais après une erreur passagère, messages créés hors ligne…).
 // Les réessais suivent le calendrier fixé par la base : 1 min, 5 min, 30 min, 2 h (au plus 5 essais). Au-delà de 24 h une notification est abandonnée.
 // Pour arrêter cette tâche : supprimer ce fichier (l'envoi à la demande continue de fonctionner).
 import { env, dispatch, canSend } from "../lib/wa.mjs";
 
-export const config = { schedule: "*/10 * * * *" };
+export const config = { schedule: "*/15 * * * *" };
 
 export default async () => {
   const c = env();

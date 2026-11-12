@@ -2,6 +2,11 @@
   publish = "."
   functions = "netlify/functions"
 
+# index.html est embarqué avec les fonctions : catalogue-page le lit pour servir l'application avec les
+# balises d'aperçu de la boutique. S'il n'était pas embarqué, la fonction le relirait sur le site (plus lent).
+[functions]
+  included_files = ["index.html"]
+
 # Le dossier supabase/ (scripts de la base) ne doit JAMAIS être servi : le site publie tout le dépôt (publish = ".")
 [[redirects]]
   from = "/supabase"
@@ -46,9 +51,13 @@
   status = 404
   force = true
 
+# Boutique publique : /catalogue/<nom>. Passe par une fonction qui sert la MÊME application que /index.html,
+# en remplaçant seulement les balises d'aperçu par le nom, la description et le logo de la boutique (c'est ce
+# que lit WhatsApp quand le vendeur partage son lien). Si la fonction échoue, elle sert la page telle quelle :
+# le lien du vendeur marche toujours. Le nom est passé en clair (?slug=) pour ne dépendre d'aucun en-tête.
 [[redirects]]
   from = "/catalogue/*"
-  to = "/index.html"
+  to = "/.netlify/functions/catalogue-page?slug=:splat"
   status = 200
 
 # Page de suivi d'une livraison (lien envoyé au client par WhatsApp) : /suivi/<code secret>

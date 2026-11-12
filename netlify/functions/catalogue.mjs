@@ -25,7 +25,7 @@ async function handle(req) {
     const len = Number(req.headers.get("content-length")) || 0;
     if (len > MAX_BODY) return j({ error: T("Catalogue trop lourd (photos). Réduis le nombre de photos.", "Catalogue too large (photos). Reduce the number of photos.") }, 413);
     let b; try { b = await req.json(); } catch { return j({ error: T("Requête invalide", "Invalid request") }, 400); }
-    const { slug, key, shop, phone, products, logo, desc, lang, pay } = b || {};
+    const { slug, key, shop, phone, products, logo, desc, lang, pay, accent } = b || {};
     if (!okSlug(slug) || typeof key !== "string" || key.length < 16) return j({ error: T("Données invalides", "Invalid data") }, 400);
     const kh = await sha(key);
     const old = await store.get(slug, { type: "json" });
@@ -46,7 +46,10 @@ async function handle(req) {
       phone: String(phone || "").replace(/[^0-9]/g, "").slice(0, 16),
       lang: lang === "en" ? "en" : "fr",
       desc: String(desc || "").replace(/[\r\n\t]+/g, " ").trim().slice(0, 160),
-      logo: okPhoto(logo, 46000) ? logo : "",
+      // Même plafond que les photos de produits (90 000) : l'appli compresse déjà le logo à 80 000 au plus.
+      // Avec l'ancien plafond de 46 000, un logo accepté par l'appli disparaissait du catalogue sans rien dire.
+      logo: okPhoto(logo) ? logo : "",
+      accent: /^#[0-9a-f]{6}$/i.test(String(accent || "")) ? String(accent).toLowerCase() : "",
       updated: Date.now(),
       products: (Array.isArray(products) ? products : []).slice(0, 60).filter(p => p && typeof p === "object").map(p => ({
         id: String((p && p.id) || "").slice(0, 20), name: String(p.name || "").slice(0, 100),

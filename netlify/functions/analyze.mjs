@@ -1,5 +1,42 @@
 import { getStore } from "@netlify/blobs";
+import { supabaseEnv, userRpc, bearer } from "../lib/supabase.mjs";
 const H = { "Content-Type": "application/json", "Cache-Control": "no-store" };
+
+// ---------------------------------------------------------------------------------------------------
+// Quota mensuel d'annonces IA, par boutique et par formule (Solo : 60, Équipe : 300).
+//
+// Il ne s'applique QUE si l'appli envoie le jeton de connexion du vendeur : Supabase vérifie ce jeton et
+// dit à quelle boutique il appartient et quelle formule elle paie. Personne ne peut donc s'attribuer la
+// formule d'un autre. Sans jeton (appli en local, pas de compte en ligne), seules les limites par appareil
+// et par jour plus bas s'appliquent, comme avant.
+//
+// Si Supabase ne répond pas, on n'empêche pas de travailler : on retombe sur ces mêmes limites.
+// ---------------------------------------------------------------------------------------------------
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const monthlyAi = plan =>
+  plan === "small" ? Number(process.env.AI_MONTHLY_SMALL) || 60
+  : plan === "large" ? Number(process.env.AI_MONTHLY_LARGE) || 300 : 0;
+
+// -> null (pas de compte en ligne, jeton refusé, Supabase muet) | { plan, left } | { over:true } | { expired:true }
+async function shopQuota(req, shopId) {
+  const jwt = bearer(req);
+  if (!jwt || !UUID.test(String(shopId || ""))) return null;
+  const c = supabaseEnv();
+  if (!c.supaUrl || !c.anonKey) return null;
+  const r = await userRpc(c, jwt, "my_shops", {});
+  if (!r.ok || !Array.isArray(r.data)) return null;                 // jeton expiré ou Supabase indisponible
+  const s = r.data.find(x => x && x.id === shopId);
+  if (!s) return null;                                              // ce vendeur n'est pas de cette boutique
+  const plan = s.plan_eff === "small" ? "small" : s.plan_eff === "large" ? "large" : "none";
+  if (plan === "none") return { expired: true };
+  const max = monthlyAi(plan);
+  const store = getStore({ name: "ai-usage", consistency: "strong" });
+  const k = "shop_" + shopId + "_" + new Date().toISOString().slice(0, 7);
+  const n = Number(await store.get(k)) || 0;
+  if (n >= max) return { over: true, plan, max };
+  await store.set(k, String(n + 1));
+  return { plan, max, left: max - n - 1 };
+}
 const j = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: H });
 // Filet de sécurité (en plus de la consigne donnée à l'IA) : pas d'appel à l'achat ni de promesse de livraison dans la description
 const W = "(?![a-zéèêàçùîôû])";
@@ -120,14 +157,22 @@ export default async (req) => {
   if (!b || typeof b !== "object") return j({ error: T("Requête invalide", "Invalid request") }, 400);
   const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(b && b.image || "");
   if (!m || m[2].length > 1500000) return j({ error: T("Image invalide ou trop lourde", "Invalid or too large image") }, 400);
-  // Limites quotidiennes (protègent ta clé) : par visiteur ET globale. Si le compteur est indisponible, on refuse.
+  // Quota mensuel de la formule (si le vendeur a un compte en ligne). Il remplace les limites par appareil.
+  let q = null;
+  try { q = await shopQuota(req, b.shop); } catch { q = null; }
+  if (q && q.expired) return j({ error: T("Ton abonnement est terminé : renouvelle-le pour écrire de nouvelles annonces.", "Your subscription has ended: renew it to write new ads.") }, 402);
+  if (q && q.over) return j({ error: T("Tu as utilisé tes " + q.max + " annonces IA de ce mois. Elles repartent à zéro le 1er du mois prochain.", "You have used your " + q.max + " AI ads for this month. They reset on the 1st of next month.") }, 429);
+
+  // Limites quotidiennes. La limite GLOBALE protège la clé Claude : elle s'applique toujours, quota de
+  // formule ou pas. La limite par appareil ne s'applique qu'aux appels sans compte en ligne : un vendeur
+  // identifié est déjà tenu par le quota mensuel de sa formule. Si le compteur est indisponible, on refuse.
   try {
     const ip = req.headers.get("x-nf-client-connection-ip") || "anon";
     const day = new Date().toISOString().slice(0, 10), store = getStore({ name: "ai-usage", consistency: "strong" });
     const k = ip + "_" + day, g = "global_" + day;
     const n = Number(await store.get(k)) || 0, tot = Number(await store.get(g)) || 0;
     const max = Number(process.env.AI_DAILY_LIMIT) || 30, maxAll = Number(process.env.AI_GLOBAL_DAILY_LIMIT) || 300;
-    if (n >= max) return j({ error: T("Limite quotidienne atteinte, réessaie demain.", "Daily limit reached, try again tomorrow.") }, 429);
+    if (!q && n >= max) return j({ error: T("Limite quotidienne atteinte, réessaie demain.", "Daily limit reached, try again tomorrow.") }, 429);
     if (tot >= maxAll) return j({ error: T("Service IA saturé aujourd'hui, réessaie demain.", "AI service saturated today, try again tomorrow.") }, 429);
     await store.set(k, String(n + 1)); await store.set(g, String(tot + 1));
   } catch { return j({ error: T("Service IA momentanément indisponible", "AI service temporarily unavailable") }, 503); }

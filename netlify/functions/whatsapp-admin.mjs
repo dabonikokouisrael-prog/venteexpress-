@@ -1,9 +1,10 @@
 // Administration WhatsApp de la plateforme : https://<votre-site>/api/whatsapp/admin
 // RÉSERVÉ à l'administrateur de la plateforme (vérifié par Supabase à chaque appel avec son jeton de connexion).
-// Actions : env (variables présentes ?), check (tester la connexion à Meta), templates (lire l'état des modèles chez Meta),
+// Actions : env (variables présentes ?), check (tester la clé secrète Supabase et la connexion à Meta), templates (lire l'état des modèles chez Meta),
 //           create_templates (soumettre les modèles manquants à Meta), subscribe (abonner l'application au compte WhatsApp), test (message de test).
-// Aucun secret n'est jamais renvoyé : seulement « renseigné / non renseigné ».
-import { env, json, bearer, userRpc, svcRpc, graph, present, canSend, classify, scrub, dispatch, throttle } from "../lib/wa.mjs";
+// Aucun secret n'est jamais renvoyé : seulement « renseigné / non renseigné » et le TYPE des clés Supabase.
+import { env, json, graph, present, supabaseDiag, canSend, classify, scrub, dispatch, throttle } from "../lib/wa.mjs";
+import { bearer, userRpc, svcRpc, testSecretKey } from "../lib/supabase.mjs";
 
 export const config = { path: "/api/whatsapp/admin" };
 
@@ -46,8 +47,8 @@ export default async (req) => {
   const c = env();
   const jwt = bearer(req);
   if (!jwt) return json({ ok: false, error: "auth" }, 401);
-  if (!c.supaUrl || !c.anonKey) return json({ ok: false, error: "not_configured", missing: [!c.supaUrl && "SUPABASE_URL", !c.anonKey && "SUPABASE_ANON_KEY"].filter(Boolean) }, 503);
-  if (!throttle("adm:" + jwt.slice(-24), 30, 60_000)) return json({ ok: false, error: "slow_down" }, 429);
+  if (!c.supaUrl || !c.anonKey) return json({ ok: false, error: "not_configured", missing: [!c.supaUrl && "SUPABASE_URL", !c.anonKey && "SUPABASE_ANON_KEY"].filter(Boolean), supabase: supabaseDiag(c) }, 503);
+  if (!(await throttle("adm:" + jwt.slice(-24), 30, 60_000))) return json({ ok: false, error: "slow_down" }, 429);
 
   // l'appelant est-il administrateur de la plateforme ? (Supabase vérifie le jeton)
   const info = await userRpc(c, jwt, "admin_wa_info", {});
@@ -57,18 +58,19 @@ export default async (req) => {
   try { b = await req.json(); } catch { /* corps vide : action par défaut */ }
   const action = String((b && b.action) || "env");
   const webhookUrl = new URL(req.url).origin + "/api/whatsapp/webhook";
-  const base = { ok: true, env: present(c), api_version: c.ver, webhook_url: webhookUrl };
+  const base = { ok: true, env: present(c), supabase: supabaseDiag(c), api_version: c.ver, webhook_url: webhookUrl };
 
   if (action === "env") return json(base);
 
   if (action === "check") {
+    const sb = await testSecretKey(c);   // la clé secrète Supabase est-elle acceptée ? (lecture seule ; la clé publishable vient d'être éprouvée par la vérification de l'appelant)
     const st = await checkConnection(c);
-    if (c.supaUrl && c.serviceKey) {
+    if (sb.ok) {
       await svcRpc(c, "wa_platform_set", { p_key: "wa_status", p_value: {
         connected: st.connected, tested_at: new Date().toISOString(), display_phone: st.phone ? st.phone.display : "", simulation: false,
         quality: st.phone ? st.phone.quality : "", webhook_subscribed: st.webhook_subscribed, error: st.connected ? "" : st.error.slice(0, 200) } });
     }
-    return json({ ...base, check: st });
+    return json({ ...base, supabase_test: sb, check: st });
   }
 
   // Les actions suivantes parlent à Meta et à la base : tout doit être renseigné

@@ -1,13 +1,13 @@
 // Aide commune des fonctions WhatsApp (webhook, envoi, administration).
 // AUCUN secret n'est écrit ici : tout vient des variables d'environnement Netlify (voir .env.example). Rien de tout cela n'est jamais envoyé au navigateur.
+// L'accès à Supabase (clé Publishable, clé Secret) est dans supabase.mjs.
 import { createHmac, createHash, timingSafeEqual } from "node:crypto";
+import { supabaseEnv, svcRpc } from "./supabase.mjs";
 
 export const env = () => {
   const e = process.env;
   return {
-    supaUrl: String(e.SUPABASE_URL || "").replace(/\/+$/, ""),
-    anonKey: String(e.SUPABASE_ANON_KEY || ""),
-    serviceKey: String(e.SUPABASE_SERVICE_ROLE_KEY || ""),
+    ...supabaseEnv(e),   // supaUrl, anonKey (clé Publishable), secretKey (clé Secret), sb (diagnostic sans valeurs)
     token: String(e.WHATSAPP_ACCESS_TOKEN || ""),
     phoneId: String(e.WHATSAPP_PHONE_NUMBER_ID || ""),
     wabaId: String(e.WHATSAPP_BUSINESS_ACCOUNT_ID || ""),
@@ -18,38 +18,15 @@ export const env = () => {
     siteUrl: String(e.URL || "").replace(/\/+$/, ""),
   };
 };
-// Quelles variables sont renseignées (oui / non seulement : jamais les valeurs)
-export const present = c => ({ supabase_url: !!c.supaUrl, supabase_anon_key: !!c.anonKey, supabase_service_key: !!c.serviceKey, access_token: !!c.token,
+// Quelles variables sont renseignées ET utilisables (oui / non seulement : jamais les valeurs)
+export const present = c => ({ supabase_url: c.sb.url === "ok", supabase_anon_key: c.sb.anon === "ok", supabase_secret_key: c.sb.secret === "ok" && c.sb.secretSource === "SUPABASE_SECRET_KEY", access_token: !!c.token,
   phone_number_id: !!c.phoneId, business_account_id: !!c.wabaId, verify_token: !!c.verify, app_secret: !!c.secret });
-export const canSend = c => !!(c.supaUrl && c.serviceKey && c.token && c.phoneId);
+// Type des clés Supabase (jamais leur valeur) et remarques à corriger : pour l'administration de la plateforme
+export const supabaseDiag = c => ({ url: c.sb.url, anon: c.sb.anonKind, secret: c.sb.secretKind, secret_var: c.sb.secretSource || null, problems: c.sb.problems });
+export const canSend = c => !!(c.supaUrl && c.secretKey && c.token && c.phoneId);
 
 export const H = { "Content-Type": "application/json", "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow" };
 export const json = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: H });
-
-// ---------------------------------------------------------------------------------------------------
-// Supabase (REST / RPC). La clé « service_role » ne sert QU'ICI, côté serveur.
-// ---------------------------------------------------------------------------------------------------
-async function rest(c, path, { method = "POST", body, key, jwt, timeout = 8000 } = {}) {
-  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), timeout);
-  try {
-    const r = await fetch(c.supaUrl + path, {
-      method, signal: ctl.signal,
-      headers: { "Content-Type": "application/json", apikey: key, Authorization: "Bearer " + (jwt || key) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    const text = await r.text();
-    let data = null; try { data = text ? JSON.parse(text) : null; } catch { /* réponse non JSON */ }
-    return { status: r.status, ok: r.ok, data, text };
-  } catch (e) {
-    return { status: 0, ok: false, data: null, text: "", net: e && e.name === "AbortError" ? "timeout" : "network" };
-  } finally { clearTimeout(t); }
-}
-export const svcRpc = (c, fn, args) => rest(c, "/rest/v1/rpc/" + fn, { body: args || {}, key: c.serviceKey });
-export const userRpc = (c, jwt, fn, args) => rest(c, "/rest/v1/rpc/" + fn, { body: args || {}, key: c.anonKey, jwt });
-export const svcGet = (c, path) => rest(c, "/rest/v1/" + path, { method: "GET", key: c.serviceKey });
-
-// Jeton de l'utilisateur envoyé par l'appli (« Authorization: Bearer … ») : jamais cru sur parole, Supabase le vérifie à chaque appel.
-export const bearer = req => { const m = /^Bearer\s+([A-Za-z0-9._-]{20,4000})$/.exec(req.headers.get("authorization") || ""); return m ? m[1] : ""; };
 
 // ---------------------------------------------------------------------------------------------------
 // Meta (Graph API)
@@ -95,7 +72,8 @@ export const scrub = (c, s) => {
   let v = String(s == null ? "" : s);
   if (c && c.token) v = v.split(c.token).join("***");
   if (c && c.secret) v = v.split(c.secret).join("***");
-  return v.replace(/EAA[A-Za-z0-9]{20,}/g, "***").replace(/Bearer\s+[A-Za-z0-9._-]{12,}/gi, "Bearer ***").replace(/access_token=[^&\s"']+/gi, "access_token=***").replace(/[\r\n\t]+/g, " ").trim();
+  if (c && c.secretKey) v = v.split(c.secretKey).join("***");
+  return v.replace(/EAA[A-Za-z0-9]{20,}/g, "***").replace(/sb_secret_[^\s"'<>]+/g, "***").replace(/eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g, "***").replace(/Bearer\s+[A-Za-z0-9._-]{12,}/gi, "Bearer ***").replace(/access_token=[^&\s"']+/gi, "access_token=***").replace(/[\r\n\t]+/g, " ").trim();
 };
 export function classify(c, r) {
   const e = (r.data && r.data.error) || {};
@@ -176,14 +154,56 @@ export function sameSecret(a, b) {   // comparaison à temps constant (les empre
 }
 
 // ---------------------------------------------------------------------------------------------------
-// Limiteur très simple (par instance) pour l'envoi déclenché sans compte (après une commande du catalogue public)
+// Limiteur de débit (envoi déclenché sans compte après une commande du catalogue public, administration…)
+//
+// Netlify lance PLUSIEURS copies d'une fonction en même temps. Un compteur gardé seulement dans la mémoire
+// d'une copie ne voit donc que sa propre part du trafic : avec 5 copies, une limite de 20 en laissait passer
+// 100. Le compteur est maintenant partagé par le stockage Netlify, que toutes les copies lisent.
+//
+// Deux étages :
+//   1. un compteur en mémoire, gratuit et immédiat : il arrête net les rafales qui tombent sur la même copie ;
+//   2. le compteur partagé, qui donne la vraie limite pour tout le site.
+// Il reste approximatif (deux appels exactement simultanés peuvent lire la même valeur avant de l'augmenter) :
+// c'est voulu, il sert à freiner les abus, pas à compter de l'argent.
+//
+// Si le stockage ne répond pas, on laisse passer : mieux vaut un message de trop qu'une commande non confirmée.
 // ---------------------------------------------------------------------------------------------------
 const hits = new Map();
-export function throttle(key, max, windowMs) {
+const SHARE = "wa-rate";
+
+function local(key, max, windowMs) {
   const now = Date.now(), h = hits.get(key);
   if (hits.size > 5000) for (const [k, v] of hits) if (v.reset < now) hits.delete(k);
   if (!h || h.reset < now) { hits.set(key, { n: 1, reset: now + windowMs }); return true; }
   if (h.n >= max) return false;
   h.n++; return true;
+}
+
+// Nom court et sans caractère gênant pour le stockage (la clé peut contenir une adresse IP ou un bout de jeton,
+// qui n'ont rien à faire dans un nom de fichier) : on n'en garde qu'une empreinte.
+const slot = (key, windowMs) =>
+  createHash("sha256").update(key).digest("hex").slice(0, 32) + "_" + Math.floor(Date.now() / windowMs);
+
+export async function throttle(key, max, windowMs) {
+  if (!local(key, max, windowMs)) return false;
+  try {
+    const { getStore } = await import("@netlify/blobs");
+    const store = getStore({ name: SHARE, consistency: "strong" });
+    const k = slot(key, windowMs);
+    const n = Number(await store.get(k)) || 0;
+    if (n >= max) return false;
+    await store.set(k, String(n + 1));
+    // Ménage de temps en temps : les créneaux passés ne servent plus à rien (le stockage n'efface pas tout seul).
+    if (Math.random() < 0.02) sweep(store, windowMs).catch(() => {});
+    return true;
+  } catch { return true; }                    // stockage indisponible : seule la limite en mémoire s'applique
+}
+
+async function sweep(store, windowMs) {
+  const cur = Math.floor(Date.now() / windowMs), { blobs } = await store.list();
+  for (const b of blobs || []) {
+    const n = Number(String(b.key).split("_").pop());
+    if (Number.isFinite(n) && n < cur - 1) await store.delete(b.key).catch(() => {});
+  }
 }
 export const clientIp = req => String(req.headers.get("x-nf-client-connection-ip") || (req.headers.get("x-forwarded-for") || "").split(",")[0] || "?").trim().slice(0, 64);
